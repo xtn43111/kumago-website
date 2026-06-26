@@ -94,11 +94,6 @@
           <section class="step-block">
             <h2 class="step-title"><span class="step-num">4</span><span data-ja="配送情報">配送資訊</span></h2>
 
-            <div class="field">
-              <label for="fArea" data-ja="配送エリア">配送地區</label>
-              <select id="fArea"></select>
-            </div>
-
             <div class="form-row two">
               <div class="field">
                 <label for="fDate" data-ja="ご希望の入居・配送日">入住／配送日</label>
@@ -117,6 +112,7 @@
                 <button type="button" id="postalBtn" class="btn-postal" data-ja="住所を自動入力">自動帶入地址</button>
               </div>
               <p class="field-hint" id="postalHint" hidden></p>
+              <p class="ship-zone" id="shipZone" hidden></p>
             </div>
 
             <div class="field">
@@ -155,7 +151,27 @@
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-5.6 7-11a7 7 0 10-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
                 <span data-ja="Googleマップで位置を確認">在 Google 地圖確認位置</span>
               </a>
-              <p class="map-hint" data-ja="住所を入力すると、Googleマップで配送先の位置をご確認いただけます。">填入地址後，可在 Google 地圖確認配送位置是否正確。</p>
+              <p class="map-hint" data-ja="住所を入力すると、下のリンクからGoogleマップで配送先の位置をご確認いただけます。">填入地址後，可點開下方連結，在 Google 地圖確認配送位置是否正確。</p>
+
+              <p class="map-url-line" id="mapUrlLine" hidden>
+                <span class="map-url-label" data-ja="マップURL：">地圖網址：</span>
+                <a id="mapUrlText" class="map-url-text" target="_blank" rel="noopener" href="#"></a>
+                <span class="map-url-ok" id="mapUrlOk" hidden>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span data-ja="位置を確認しました">位置正確</span>
+                </span>
+              </p>
+
+              <div class="map-check" id="mapCheck" hidden>
+                <p class="map-check-q" data-ja="地図に表示された位置は正しいですか？">地圖上顯示的位置正確嗎？</p>
+                <div class="seg" id="mapConfirmSeg"></div>
+              </div>
+
+              <div class="field map-custom" id="mapCustomWrap" hidden>
+                <label for="fMapUrl" data-ja="正しい位置の Googleマップ URL">正確位置的 Google 地圖網址</label>
+                <input id="fMapUrl" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/…" data-ja-ph="https://maps.app.goo.gl/…" />
+                <p class="field-hint" data-ja="Googleマップで正しい位置を開き、「共有」ボタンからURLをコピーして貼り付けてください。">請在 Google 地圖上找到正確位置，點「分享」複製網址後貼上。</p>
+              </div>
             </div>
           </section>
 
@@ -185,8 +201,8 @@
             <span class="val" id="sumTotal">¥0</span>
           </div>
 
-          <div class="ship-note" id="shipNote" hidden data-ja="市外（奈良・京都・兵庫）は送料 ¥8,000〜18,000 が別途必要です。金額確定のため LINE で見積りをご案内します。">
-            市外（奈良・京都・兵庫）需另計運費 ¥8,000–18,000。為確認金額，將透過 LINE 為您報價。
+          <div class="ship-note" id="shipNote" hidden data-ja="ご入力の郵便番号は配送対象エリア外です。ご希望の場合は LINE までお問い合わせください。">
+            您輸入的郵便番號不在配送範圍內，如有需要請透過 LINE 與我們聯繫。
           </div>
 
           <button type="button" class="btn-pay" id="payBtn" data-ja="お支払いへ進む">前往付款</button>

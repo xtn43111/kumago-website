@@ -1,4 +1,4 @@
-/* KUMAGO 中古家電 — landing page interactions */
+/* KUMAGO 家具家電租賃 — landing page interactions */
 (function () {
   "use strict";
 

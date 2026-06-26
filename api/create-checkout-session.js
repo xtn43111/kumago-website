@@ -33,8 +33,49 @@ const ADDONS = {
   clothesline:   { price: 1800, name: "曬衣桿 Drying pole" },
 };
 
-// Online-payable areas only. 市外 (nara/kyoto/hyogo) needs a manual shipping quote → LINE.
-const ONLINE_AREAS = new Set(["osaka"]);
+/* Shipping fee, derived from the postal-code lookup (都道府県 + 市区町村).
+ * ⚠ MUST stay in sync with order.js shippingFor(). 大阪市内 = free (0);
+ * a returned null means the address is outside the online-quotable area
+ * (→ LINE manual quote), so the checkout is rejected here as a safeguard. */
+const SHIP_OSAKA_TIERS = [
+  { fee: 6600,  cities: ["堺市", "松原市", "東大阪市"] },
+  { fee: 9800,  cities: ["藤井寺市", "八尾市", "大阪狭山市", "柏原市", "守口市", "門真市",
+                         "大東市", "豊中市", "吹田市", "高石市", "泉大津市", "和泉市",
+                         "岸和田市", "寝屋川市", "枚方市", "茨木市", "摂津市", "池田市", "箕面市"] },
+  { fee: 13800, cities: ["高槻市", "交野市", "四條畷市", "四条畷市", "泉佐野市", "貝塚市",
+                         "富田林市", "羽曳野市", "阪南市", "河内長野市", "泉南市"] },
+];
+
+const KYOTO_25000 = ["向日市", "長岡京市", "八幡市", "京田辺市", "宇治市", "城陽市", "木津川市", "亀岡市"];
+const NARA_15800 = ["奈良市", "天理市", "橿原市"];
+const NARA_18000 = ["生駒市", "大和郡山市", "香芝市", "葛城市", "大和高田市"];
+const HYOGO_18000 = ["神戸市", "尼崎市", "西宮市", "芦屋市", "伊丹市", "宝塚市", "川西市", "三田市"];
+
+function shippingFee(pref, city) {
+  pref = pref || "";
+  city = city || "";
+  const has = (name) => city.indexOf(name) === 0; // 政令市の区にも前方一致で対応
+  if (pref === "大阪府") {
+    if (has("大阪市")) return 0;
+    for (const tier of SHIP_OSAKA_TIERS) if (tier.cities.some(has)) return tier.fee;
+    return null;
+  }
+  if (pref === "京都府") {
+    if (has("京都市")) return 18000;
+    if (KYOTO_25000.some(has)) return 25000;
+    return null;
+  }
+  if (pref === "奈良県") {
+    if (NARA_15800.some(has)) return 15800;
+    if (NARA_18000.some(has)) return 18000;
+    return null;
+  }
+  if (pref === "兵庫県") {
+    if (HYOGO_18000.some(has)) return 18000;
+    return null;
+  }
+  return null;
+}
 
 function durationLabel(d) {
   if (d === "半年") return "半年";
@@ -61,14 +102,17 @@ module.exports = async function handler(req, res) {
   body = body || {};
 
   const { plan, duration, addons = [], area, moveInDate, time,
-          address, postal, building, mapUrl,
+          address, postal, building, mapUrl, shipPref, shipCity,
           room, noRoom, elevator, name, contact, lang } = body;
 
   // ---- validate core selection ----
   if (!PLAN_PRICES[plan] || !PLAN_PRICES[plan][duration]) {
     return res.status(400).json({ error: "invalid_plan_or_duration" });
   }
-  if (!ONLINE_AREAS.has(area)) {
+  // Recompute the shipping fee from the trusted table; null = outside the online
+  // area, which must go through the LINE quote instead of online checkout.
+  const shipFee = shippingFee(shipPref, shipCity);
+  if (shipFee == null) {
     return res.status(400).json({ error: "area_requires_quote" });
   }
   if (!moveInDate || !time || !address || !elevator || !name || !contact) {
@@ -87,6 +131,14 @@ module.exports = async function handler(req, res) {
   const addonList = Array.isArray(addons) ? addons : [];
   for (const k of addonList) {
     if (ADDONS[k]) items.push({ name: ADDONS[k].name, amount: ADDONS[k].price });
+  }
+  // No-elevator floor-carry fee (kept in sync with order.js NO_ELEVATOR_FEE).
+  if (elevator === "無") {
+    items.push({ name: "無電梯樓層搬運費 No-elevator floor fee", amount: 3300 });
+  }
+  // Out-of-Osaka-City delivery fee (0 = 大阪市内 free, so no line item).
+  if (shipFee > 0) {
+    items.push({ name: `市外配送費 Delivery fee (${shipCity || area || ""})`.trim(), amount: shipFee });
   }
 
   // ---- origin for redirect URLs ----
@@ -116,7 +168,8 @@ module.exports = async function handler(req, res) {
   const meta = {
     plan, duration,
     addons: addonList.join(",") || "(none)",
-    area,
+    area: shipCity || area || "",
+    ship_fee: String(shipFee),
     move_in_date: moveInDate,
     delivery_time: time,
     postal: postal || "",

@@ -8,7 +8,7 @@
   /* =================== LINE OA (市外報價導流用) ===================
      市外（奈良・京都・兵庫）運費需人工報價，導去 LINE 預填訂單摘要。
      ▼ 換成實際的 LINE 官方帳號 Basic ID（含 @）。 */
-  const LINE_OA_BASIC_ID = "@kumago"; // TODO: 換成實際 Basic ID
+  const LINE_OA_BASIC_ID = "@967bmevi"; // KUMAGO 官方帳號（lin.ee/z3yASqK）
 
   /* =================== DATA =================== */
   // 期別價格完全對齊 plan_data.PLANS
@@ -57,24 +57,77 @@
     { key: "clothesline",   price: 1800, zh: "曬衣桿",       ja: "物干し竿" },
   ].map((a) => ({ ...a, img: `assets/addons/${a.key}.jpg` }));
 
-  const AREAS = [
-    { key: "osaka", online: true,  zh: "大阪市內", ja: "大阪市内" },
-    { key: "nara",  online: false, zh: "奈良",     ja: "奈良" },
-    { key: "kyoto", online: false, zh: "京都",     ja: "京都" },
-    { key: "hyogo", online: false, zh: "兵庫（神戶）", ja: "兵庫（神戸）" },
+  /* =================== 配送費（依郵便番號辨識的市區自動計算） ===================
+     大阪市內免費；大阪府其他市、奈良・京都・兵庫依下表加收市外配送費。
+     清單外的地區無法線上估價 → 導去 LINE 人工報價。
+     ⚠ 與後端 api/create-checkout-session.js 的 shippingFee() 必須保持同步。 */
+  const SHIP_OSAKA_TIERS = [
+    { fee: 6600,  cities: ["堺市", "松原市", "東大阪市"] },
+    { fee: 9800,  cities: ["藤井寺市", "八尾市", "大阪狭山市", "柏原市", "守口市", "門真市",
+                           "大東市", "豊中市", "吹田市", "高石市", "泉大津市", "和泉市",
+                           "岸和田市", "寝屋川市", "枚方市", "茨木市", "摂津市", "池田市", "箕面市"] },
+    { fee: 13800, cities: ["高槻市", "交野市", "四條畷市", "四条畷市", "泉佐野市", "貝塚市",
+                           "富田林市", "羽曳野市", "阪南市", "河内長野市", "泉南市"] },
   ];
 
+  // 京都府：京都市 ¥18,000／下列近郊市 ¥25,000／其餘不在配送範圍
+  const KYOTO_25000 = ["向日市", "長岡京市", "八幡市", "京田辺市", "宇治市", "城陽市", "木津川市", "亀岡市"];
+  // 奈良県：奈良・天理・橿原 ¥15,800／下列近郊市 ¥18,000／其餘不在配送範圍
+  const NARA_15800 = ["奈良市", "天理市", "橿原市"];
+  const NARA_18000 = ["生駒市", "大和郡山市", "香芝市", "葛城市", "大和高田市"];
+  // 兵庫県：下列阪神間 8 市のみ ¥18,000／其餘（播磨・西部・北部・淡路島等）不在配送範圍
+  const HYOGO_18000 = ["神戸市", "尼崎市", "西宮市", "芦屋市", "伊丹市", "宝塚市", "川西市", "三田市"];
+
+  // zipcloud の address1（都道府県）＋ address2（市区町村）から配送費を判定。
+  // fee: 0=大阪市内無料 / 数値=市外配送費 / null=配送対象エリア外（LINE 洽詢）
+  function shippingFor(pref, city) {
+    pref = pref || "";
+    city = city || "";
+    const has = (name) => city.indexOf(name) === 0; // 政令市は「堺市堺区」等 → 前方一致
+    const ok = (fee, zh, ja) => ({ fee, online: true, zh: zh || city, ja: ja || city });
+    const no = () => ({ fee: null, online: false, zh: city || pref || "", ja: city || pref || "" });
+    if (pref === "大阪府") {
+      if (has("大阪市")) return ok(0, "大阪市內（免費配送）", "大阪市内（配送無料）");
+      for (const tier of SHIP_OSAKA_TIERS) if (tier.cities.some(has)) return ok(tier.fee);
+      return no();
+    }
+    if (pref === "京都府") {
+      if (has("京都市")) return ok(18000, "京都市", "京都市");
+      if (KYOTO_25000.some(has)) return ok(25000);
+      return no();
+    }
+    if (pref === "奈良県") {
+      if (NARA_15800.some(has)) return ok(15800);
+      if (NARA_18000.some(has)) return ok(18000);
+      return no();
+    }
+    if (pref === "兵庫県") {
+      if (HYOGO_18000.some(has)) return ok(18000);
+      return no();
+    }
+    return no();
+  }
+
+  const SHIP_FEE_LABEL = { zh: "市外配送費", ja: "市外配送料" };
+  const SHIP_FREE_LABEL = { zh: "大阪市內配送", ja: "大阪市内配送" };
+
   const TIMES = [
-    { key: "10-12", zh: "10:00–12:00", ja: "10:00〜12:00" },
-    { key: "12-14", zh: "12:00–14:00", ja: "12:00〜14:00" },
-    { key: "14-16", zh: "14:00–16:00", ja: "14:00〜16:00" },
-    { key: "any",   zh: "都可以",       ja: "どの時間帯でも可" },
+    { key: "09-1130", zh: "09:00–11:30", ja: "09:00〜11:30" },
+    { key: "1230-16", zh: "12:30–16:00", ja: "12:30〜16:00" },
   ];
 
   const ELEVATORS = [
     { key: "有",     zh: "有電梯",   ja: "エレベーターあり" },
     { key: "無",     zh: "無電梯",   ja: "エレベーターなし" },
-    { key: "不知道", zh: "不確定",   ja: "わからない" },
+  ];
+
+  // 無電梯時的人工樓層搬運費（與後端 create-checkout-session.js 同步）
+  const NO_ELEVATOR_FEE = 3300;
+  const NO_ELEVATOR_LABEL = { zh: "無電梯樓層搬運費", ja: "エレベーターなし階上げ料" };
+
+  const MAP_CONFIRMS = [
+    { key: "correct",   zh: "位置正確",   ja: "位置は正しい" },
+    { key: "incorrect", zh: "位置不正確", ja: "位置が違う" },
   ];
 
   /* =================== i18n micro-helpers =================== */
@@ -96,7 +149,10 @@
     plan: null,
     duration: null,
     addons: new Set(),
-    area: "osaka",
+    shipPref: "",     // 郵便番號查到的都道府県
+    shipCity: "",     // 郵便番號查到的市区町村
+    ship: null,       // shippingFor() 的結果，null = 尚未查郵便番號
+    mapConfirm: null, // null | "correct" | "incorrect"
   };
 
   const $ = (s, r = document) => r.querySelector(s);
@@ -179,17 +235,7 @@
     });
   }
 
-  function renderAreaTimeSelects() {
-    const area = $("#fArea");
-    area.innerHTML = "";
-    AREAS.forEach((a) => {
-      const o = document.createElement("option");
-      o.value = a.key;
-      o.textContent = a[L()] + (a.online ? "" : T.t("（市外・需報價）", "（市外・要見積り）"));
-      area.appendChild(o);
-    });
-    area.value = state.area;
-
+  function renderTimeSelect() {
     const time = $("#fTime");
     const keep = time.value;
     time.innerHTML = "";
@@ -208,6 +254,36 @@
     if (keep) time.value = keep;
   }
 
+  // 配送區域 + 配送費的即時提示（依郵便番號自動判定）
+  function renderShipZone() {
+    const box = $("#shipZone");
+    if (!box) return;
+    const s = state.ship;
+    if (!s) {
+      box.hidden = true;
+      box.className = "ship-zone";
+      box.textContent = "";
+      return;
+    }
+    box.hidden = false;
+    if (!s.online) {
+      box.className = "ship-zone warn";
+      box.textContent = T.t(
+        `很抱歉，「${s.zh}」目前不在配送範圍內。如有需要請透過 LINE 與我們聯繫。`,
+        `申し訳ございません。「${s.ja}」は配送対象エリア外です。ご希望の場合は LINE までご連絡ください。`
+      );
+    } else if (s.fee === 0) {
+      box.className = "ship-zone ok";
+      box.textContent = T.t(`配送地區：${s.zh}・運費免費`, `配送エリア：${s.ja}・送料無料`);
+    } else {
+      box.className = "ship-zone";
+      box.textContent = T.t(
+        `配送地區：${s.zh}・市外配送費 ${T.yen(s.fee)}`,
+        `配送エリア：${s.ja}・市外送料 ${T.yen(s.fee)}`
+      );
+    }
+  }
+
   function renderElevator() {
     const wrap = $("#fElevator");
     const keep = wrap.dataset.value || "";
@@ -221,9 +297,14 @@
       el.addEventListener("click", () => {
         wrap.dataset.value = e.key;
         renderElevator();
+        recalc(); // 無電梯 → 加樓層搬運費，需重算合計
       });
       wrap.appendChild(el);
     });
+  }
+
+  function elevatorValue() {
+    return $("#fElevator").dataset.value || "";
   }
 
   /* =================== POSTAL CODE → ADDRESS (zipcloud) =================== */
@@ -245,10 +326,16 @@
       if (j.status === 200 && j.results && j.results.length) {
         const a = j.results[0];
         $("#fAddr1").value = `${a.address1}${a.address2}${a.address3}`;
+        // 依都道府県＋市区町村判定配送區域與運費
+        state.shipPref = a.address1 || "";
+        state.shipCity = a.address2 || "";
+        state.ship = shippingFor(state.shipPref, state.shipCity);
+        renderShipZone();
         hint.className = "field-hint ok";
         hint.textContent = T.t("已帶入地址，請接著填寫番地與建物名", "住所を入力しました。番地・建物名をご記入ください");
         $("#fBanchi").focus();
         updateMapLink();
+        recalc(); // 運費可能變動 → 重算合計與按鈕
       } else {
         hint.className = "field-hint err";
         hint.textContent = T.t("查無此郵便番號，請確認後再試", "該当する住所が見つかりません。番号をご確認ください");
@@ -266,18 +353,72 @@
     const building = $("#fBuilding").value.trim();
     return [addr1, banchi, building].filter(Boolean).join(" ").trim();
   }
-  function updateMapLink() {
+  function searchMapUrl() {
     const q = mapQuery();
+    return q ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q) : "";
+  }
+  function customMapUrl() {
+    return ($("#fMapUrl").value || "").trim();
+  }
+  // The URL submitted with the order: customer-supplied if they flagged the
+  // auto-located pin as wrong, otherwise the address-search link.
+  function resolvedMapUrl() {
+    if (state.mapConfirm === "incorrect" && customMapUrl()) return customMapUrl();
+    return searchMapUrl();
+  }
+
+  function renderMapConfirm() {
+    const wrap = $("#mapConfirmSeg");
+    wrap.innerHTML = "";
+    MAP_CONFIRMS.forEach((m) => {
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "seg-btn" + (state.mapConfirm === m.key ? " is-selected" : "");
+      el.dataset.val = m.key;
+      el.textContent = m[L()];
+      el.addEventListener("click", () => {
+        state.mapConfirm = m.key;
+        renderMapConfirm();
+        // Custom-URL field only appears when the pin is flagged wrong;
+        // a confirmed-correct pin just gets a checkmark beside the URL.
+        $("#mapCustomWrap").hidden = m.key !== "incorrect";
+        $("#mapUrlOk").hidden = m.key !== "correct";
+      });
+      wrap.appendChild(el);
+    });
+  }
+
+  function updateMapLink() {
+    const url = searchMapUrl();
     const link = $("#mapLink");
-    const ready = $("#fAddr1").value.trim() && $("#fBanchi").value.trim();
+    const ready = !!($("#fAddr1").value.trim() && $("#fBanchi").value.trim());
     if (ready) {
-      link.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q);
+      link.href = url;
       link.classList.remove("is-disabled");
       link.setAttribute("aria-disabled", "false");
     } else {
       link.href = "#";
       link.classList.add("is-disabled");
       link.setAttribute("aria-disabled", "true");
+    }
+
+    // Show the URL text + the correct/incorrect confirmation only once ready.
+    const urlLine = $("#mapUrlLine");
+    const urlText = $("#mapUrlText");
+    urlLine.hidden = !ready;
+    $("#mapCheck").hidden = !ready;
+    if (ready) {
+      urlText.href = url;
+      // Show a human-readable form (decoded query) while linking to the real URL.
+      let display = url;
+      try { display = decodeURIComponent(url); } catch (e) { /* keep raw */ }
+      urlText.textContent = display;
+      $("#mapUrlOk").hidden = state.mapConfirm !== "correct";
+    } else {
+      urlText.href = "#";
+      urlText.textContent = "";
+      $("#mapUrlOk").hidden = true;
+      $("#mapCustomWrap").hidden = true;
     }
   }
 
@@ -293,6 +434,14 @@
     ADDONS.forEach((a) => {
       if (state.addons.has(a.key)) items.push({ label: a[L()], amount: a.price });
     });
+    // 無電梯樓層搬運費（僅在已選方案＋租期、即有實際訂單時加上）
+    if (state.plan && state.duration && elevatorValue() === "無") {
+      items.push({ label: NO_ELEVATOR_LABEL[L()], amount: NO_ELEVATOR_FEE });
+    }
+    // 市外配送費（依郵便番號判定；大阪市內為 0，僅作免運提示，不計入金額）
+    if (state.plan && state.duration && state.ship && state.ship.online && state.ship.fee > 0) {
+      items.push({ label: `${SHIP_FEE_LABEL[L()]}（${state.ship[L()]}）`, amount: state.ship.fee });
+    }
     return items;
   }
 
@@ -316,27 +465,28 @@
     }
     $("#sumTotal").textContent = T.yen(total);
 
-    const onlineArea = isOnlineArea();
-    $("#shipNote").hidden = onlineArea;
-    updateCta(total, onlineArea);
+    // 市外（清單外）才顯示需 LINE 報價的提示
+    $("#shipNote").hidden = !(state.ship && !state.ship.online);
+    updateCta(total);
   }
 
+  // 已查到郵便番號且屬於可線上估價的地區
   function isOnlineArea() {
-    const a = AREAS.find((x) => x.key === state.area);
-    return !!(a && a.online);
+    return !!(state.ship && state.ship.online);
   }
 
-  function updateCta(total, onlineArea) {
+  function updateCta(total) {
     const btn = $("#payBtn");
     const ready = state.plan && state.duration && total > 0;
-    if (onlineArea) {
+    // 清單外地區 → 走 LINE 報價；其餘（含尚未輸入郵便番號）→ 線上付款
+    if (state.ship && !state.ship.online) {
+      btn.classList.add("is-line");
+      btn.textContent = T.t("此地區請透過 LINE 洽詢", "対象エリア外・LINE でお問い合わせ");
+    } else {
       btn.classList.remove("is-line");
       btn.textContent = ready
         ? T.t(`前往付款 ${T.yen(total)}`, `お支払いへ進む ${T.yen(total)}`)
         : T.t("前往付款", "お支払いへ進む");
-    } else {
-      btn.classList.add("is-line");
-      btn.textContent = T.t("市外配送・透過 LINE 取得報價", "市外配送・LINE で見積り");
     }
   }
 
@@ -350,7 +500,10 @@
       plan: state.plan,
       duration: state.duration,
       addons: Array.from(state.addons),
-      area: state.area,
+      shipPref: state.shipPref,
+      shipCity: state.shipCity,
+      shipFee: state.ship ? state.ship.fee : null,
+      area: state.ship ? state.ship.zh : "",
       moveInDate: $("#fDate").value.trim(),
       time: $("#fTime").value,
       postal: $("#fPostal").value.trim(),
@@ -362,7 +515,9 @@
       elevator: $("#fElevator").dataset.value || "",
       name: $("#fName").value.trim(),
       contact: $("#fContact").value.trim(),
-      mapUrl: mapQuery() ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(mapQuery()) : "",
+      mapUrl: resolvedMapUrl(),
+      mapConfirm: state.mapConfirm || "",
+      mapCorrected: state.mapConfirm === "incorrect" && !!customMapUrl(),
       lang: L(),
     };
   }
@@ -373,10 +528,13 @@
     if (!d.duration) miss.push(T.t("租期", "レンタル期間"));
     if (!d.moveInDate) miss.push(T.t("入住日", "入居日"));
     if (!d.time) miss.push(T.t("到貨時段", "配送時間帯"));
+    if (!state.ship) miss.push(T.t("郵便番號（以確認配送費）", "郵便番号（送料の確認のため）"));
     if (!d.addr1) miss.push(T.t("縣市區町名（可用郵便番號帶入）", "住所（郵便番号で自動入力可）"));
     if (!d.banchi) miss.push(T.t("丁目・番地・號", "番地"));
     if (!d.noRoom && !d.room) miss.push(T.t("房號（或勾選無房號）", "部屋番号（または「部屋番号なし」）"));
     if (!d.elevator) miss.push(T.t("電梯", "エレベーター"));
+    if (d.mapConfirm === "incorrect" && !customMapUrl())
+      miss.push(T.t("正確位置的 Google 地圖網址", "正しい位置の Googleマップ URL"));
     if (!d.name) miss.push(T.t("姓名", "お名前"));
     if (!d.contact) miss.push(T.t("聯絡方式", "ご連絡先"));
     return miss;
@@ -393,9 +551,9 @@
   function buildLineDeeplink(d) {
     const items = lineItems();
     const total = items.reduce((s, i) => s + i.amount, 0);
-    const areaName = (AREAS.find((a) => a.key === d.area) || {})[L()] || d.area;
+    const areaName = (state.ship && state.ship[L()]) || d.area || `〒${d.postal}`;
     const lines = [
-      T.t("您好，我想預訂年租方案（市外配送，想了解運費報價）：", "年間レンタルを予約したいです（市外配送・送料の見積り希望）："),
+      T.t("您好，我想預訂年租方案，想確認這個地區是否能配送：", "年間レンタルを予約したいです。配送可否を確認したいです："),
       `${T.t("方案", "プラン")}：${items[0] ? items[0].label : ""}`,
       d.addons.length
         ? `${T.t("加購", "追加")}：${ADDONS.filter((a) => state.addons.has(a.key)).map((a) => a[L()]).join("、")}`
@@ -455,8 +613,10 @@
     renderPlans();
     renderDurations();
     renderAddons();
-    renderAreaTimeSelects();
+    renderTimeSelect();
+    renderShipZone();
     renderElevator();
+    renderMapConfirm();
 
     const pre = new URLSearchParams(location.search).get("plan");
     if (pre && PLANS[pre.toUpperCase()]) {
@@ -466,7 +626,6 @@
       renderDurations();
     }
 
-    $("#fArea").addEventListener("change", (e) => { state.area = e.target.value; recalc(); });
     $("#fTime").addEventListener("change", recalc);
     $("#fNoRoom").addEventListener("change", (e) => {
       $("#fRoom").disabled = e.target.checked;
@@ -481,9 +640,19 @@
       if (digits.length === 7) lookupPostal(); // auto when 7 digits typed
     });
 
-    // map link updates as address changes
+    // map link updates as address changes; a changed address invalidates any
+    // prior correct/incorrect confirmation, so reset it.
+    function onAddrChange() {
+      if (state.mapConfirm) {
+        state.mapConfirm = null;
+        renderMapConfirm();
+        $("#mapCustomWrap").hidden = true;
+        $("#mapUrlOk").hidden = true;
+      }
+      updateMapLink();
+    }
     ["#fAddr1", "#fBanchi", "#fBuilding"].forEach((s) =>
-      $(s).addEventListener("input", updateMapLink)
+      $(s).addEventListener("input", onAddrChange)
     );
 
     $("#payBtn").addEventListener("click", onSubmit);
@@ -493,8 +662,10 @@
       renderPlans();
       renderDurations();
       renderAddons();
-      renderAreaTimeSelects();
+      renderTimeSelect();
+      renderShipZone();
       renderElevator();
+      renderMapConfirm();
       recalc();
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
 

@@ -1,5 +1,11 @@
 /* KUMAGO 年租方案訂購頁 — relies on the design tokens from styles.css */
 
+/* The [hidden] attribute must win over component display rules (.field is
+   display:flex, .map-url-ok is inline-flex), otherwise toggled-off blocks like
+   the custom-map-URL field stay visible. Author rules beat the UA [hidden] rule,
+   so re-assert it here. */
+[hidden] { display: none !important; }
+
 .order-main { padding: 28px 0 80px; }
 
 .order-head { text-align: center; margin-bottom: 30px; }
@@ -157,6 +163,15 @@
 .field-hint.ok { color: var(--green-deep); }
 .field-hint.err { color: #c0392b; }
 
+/* 配送區域 + 運費的即時提示（依郵便番號自動判定） */
+.ship-zone {
+  margin: 10px 0 0; padding: 9px 12px;
+  border-radius: 12px; font-size: .84rem; font-weight: 600; line-height: 1.45;
+  background: #f4efe6; border: 1px solid var(--wood); color: var(--brown);
+}
+.ship-zone.ok { background: #eef7ee; border-color: var(--green); color: var(--green-deep); }
+.ship-zone.warn { background: #fdf1e3; border-color: #e0a05a; color: #9a5a1e; }
+
 .map-confirm { margin-top: 16px; }
 .btn-map {
   display: inline-flex; align-items: center; gap: 7px;
@@ -168,6 +183,26 @@
 .btn-map:hover { border-color: var(--green); color: var(--green-deep); }
 .btn-map.is-disabled { opacity: .5; pointer-events: none; }
 .map-hint { font-size: .8rem; color: var(--ink-soft); margin: 8px 0 0; line-height: 1.5; }
+
+.map-url-line {
+  margin: 10px 0 0; font-size: .8rem; line-height: 1.5;
+  display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline;
+}
+.map-url-label { flex: 0 0 auto; color: var(--ink-soft); font-weight: 700; }
+.map-url-text {
+  flex: 1 1 220px; min-width: 0;
+  color: var(--green-deep); text-decoration: underline;
+  word-break: break-all; overflow-wrap: anywhere;
+}
+.map-url-ok {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: var(--pill);
+  background: rgba(46, 139, 87, .12); color: var(--green-deep);
+  font-size: .78rem; font-weight: 700; white-space: nowrap;
+}
+.map-check { margin-top: 14px; }
+.map-check-q { margin: 0 0 8px; font-size: .9rem; font-weight: 700; color: var(--charcoal); }
+.map-custom { margin-top: 12px; }
 
 /* ---------- delivery / contact fields ---------- */
 .form-row { display: grid; gap: 14px; }
