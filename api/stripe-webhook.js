@@ -16,6 +16,7 @@
 
 const crypto = require("crypto");
 const { sendOrderEmails } = require("../lib/mailer.js");
+const { createOrderEvent } = require("../lib/gcal.js");
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -112,7 +113,19 @@ module.exports = async function handler(req, res) {
   if (report.errors && report.errors.length) console.error("stripe-webhook mail errors:", report.errors);
   console.log("stripe-webhook: emails", JSON.stringify({ id: session.id, ...report }));
 
-  return res.status(200).json({ received: true, emails: report });
+  // Record the order onto the shop Google Calendar (idempotent on session id, so
+  // Stripe retries upsert the same event). A failure here must never make Stripe
+  // retry endlessly — the payment is already captured.
+  let cal = { created: false, skipped: false, errors: [] };
+  try {
+    cal = await createOrderEvent(meta, lineItems, amountTotal, session.id);
+  } catch (e) {
+    console.error("stripe-webhook: createOrderEvent threw:", e);
+  }
+  if (cal.errors && cal.errors.length) console.error("stripe-webhook calendar errors:", cal.errors);
+  console.log("stripe-webhook: calendar", JSON.stringify({ id: session.id, ...cal }));
+
+  return res.status(200).json({ received: true, emails: report, calendar: cal });
 };
 
 // Disable Vercel's automatic body parser — we need the raw bytes for the HMAC.
