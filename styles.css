@@ -154,7 +154,7 @@ html[lang="ja"] h1, html[lang="ja"] h2, html[lang="ja"] h3, html[lang="ja"] h4 {
 
 /* ---------- hero ---------- */
 .hero {
-  position: relative; padding: 70px 0 60px;
+  position: relative; padding: 70px 0 60px; overflow-x: clip;
   background:
     radial-gradient(900px 460px at 88% -8%, rgba(140,198,63,.16), transparent 60%),
     radial-gradient(720px 420px at -6% 8%, rgba(216,195,165,.30), transparent 55%);
@@ -370,7 +370,11 @@ html[lang="ja"] h1, html[lang="ja"] h2, html[lang="ja"] h3, html[lang="ja"] h4 {
 @media (max-width: 980px) {
   .hero-grid { grid-template-columns: 1fr; gap: 40px; text-align: center; }
   .hero-copy { order: 2; }
-  .hero-visual { order: 1; }
+  /* cap the visual to the card width and pin chips to its edges so they
+     can't float past the viewport once the hero stacks to one column */
+  .hero-visual { order: 1; width: min(440px, 100%); margin-inline: auto; }
+  .chip-1 { left: 0; }
+  .chip-2 { right: 0; }
   .lede { margin-inline: auto; }
   .hero-actions, .hero-badges { justify-content: center; }
   .feature-grid, .steps, .product-grid { grid-template-columns: repeat(2, 1fr); }
@@ -379,7 +383,8 @@ html[lang="ja"] h1, html[lang="ja"] h2, html[lang="ja"] h3, html[lang="ja"] h4 {
   .footer-grid { grid-template-columns: 1fr 1fr; }
   .steps { row-gap: 44px; }
 }
-@media (max-width: 760px) {
+/* nav collapses to hamburger before the wide desktop nav can overflow (~900px) */
+@media (max-width: 900px) {
   .nav {
     position: fixed; inset: 76px 0 auto 0; flex-direction: column; align-items: stretch;
     background: var(--offwhite); padding: 18px 24px 26px; gap: 4px;
@@ -390,6 +395,8 @@ html[lang="ja"] h1, html[lang="ja"] h2, html[lang="ja"] h3, html[lang="ja"] h4 {
   .nav > a:not(.btn) { padding: 12px 4px; border-bottom: 1px solid var(--line); }
   .nav-cta { margin-top: 12px; text-align: center; }
   .nav-toggle { display: flex; }
+}
+@media (max-width: 760px) {
   .section { padding: 70px 0; }
   .cat-grid { grid-template-columns: 1fr 1fr; }
   .stats { grid-template-columns: 1fr 1fr; gap: 20px 0; padding: 26px 14px; }
