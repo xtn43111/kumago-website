@@ -570,6 +570,37 @@
     return "https://line.me/R/oaMessage/" + LINE_OA_BASIC_ID + "/?" + encodeURIComponent(lines.join("\n"));
   }
 
+  /* Build the post-payment LINE handoff and stash it for success.html to pick up.
+     After Stripe redirects back to /success (same browser/origin), the success page
+     reads this from localStorage and guides the customer to add the official LINE
+     and send their full order details to 客服. */
+  function buildPaidOrderStash(d) {
+    const items = lineItems();
+    const total = items.reduce((s, i) => s + i.amount, 0);
+    const areaName = (state.ship && state.ship[L()]) || d.area || `〒${d.postal}`;
+    const lines = [
+      T.t("【KUMAGO 線上訂單・已完成付款】", "【KUMAGO オンライン注文・決済完了】"),
+      items.map((i) => `・${i.label}　${T.yen(i.amount)}`).join("\n"),
+      `${T.t("總金額", "合計")}：${T.yen(total)}`,
+      `${T.t("入住日", "入居日")}：${d.moveInDate}　${d.time}`,
+      `${T.t("配送地區", "配送エリア")}：${areaName}`,
+      `${T.t("地址", "住所")}：〒${d.postal} ${fullAddress(d)} ${d.room}`.trim(),
+      d.mapUrl ? `${T.t("地圖", "地図")}：${d.mapUrl}` : "",
+      `${T.t("電梯", "EV")}：${d.elevator}`,
+      `${T.t("姓名", "お名前")}：${d.name}`,
+      `${T.t("聯絡", "連絡先")}：${d.contact}`,
+      T.t("（已完成線上付款，麻煩協助確認配送日期與時段，謝謝！）",
+          "（オンライン決済が完了しました。配送日時のご確認をお願いいたします。）"),
+    ].filter(Boolean);
+    const msg = lines.join("\n");
+    return {
+      msg: msg,
+      deeplink: "https://line.me/R/oaMessage/" + LINE_OA_BASIC_ID + "/?" + encodeURIComponent(msg),
+      addFriend: "https://lin.ee/z3yASqK",
+      lang: L(),
+    };
+  }
+
   async function onSubmit() {
     const d = collectForm();
     const miss = validate(d);
@@ -597,6 +628,8 @@
       });
       const json = await res.json();
       if (!res.ok || !json.url) throw new Error(json.error || "checkout_failed");
+      // Stash the order so success.html can route the customer to LINE 客服.
+      try { localStorage.setItem("kumago_paid_order", JSON.stringify(buildPaidOrderStash(d))); } catch (e) {}
       window.location.href = json.url;
     } catch (err) {
       btn.disabled = false;

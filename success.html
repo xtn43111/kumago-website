@@ -24,6 +24,35 @@
     .thanks-card h1 { font-size: 1.7rem; margin: 0 0 12px; color: var(--charcoal); }
     .thanks-card p { color: var(--ink-soft); line-height: 1.7; margin: 0 0 10px; }
     .thanks-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 26px; }
+
+    /* LINE handoff */
+    .line-step {
+      margin-top: 28px; padding-top: 26px; border-top: 1px dashed var(--line); text-align: left;
+    }
+    .line-step h2 {
+      font-size: 1.18rem; margin: 0 0 6px; color: var(--charcoal); text-align: center;
+    }
+    .line-step > p { text-align: center; margin: 0 0 18px; }
+    .line-num {
+      display: inline-flex; align-items: center; justify-content: center; flex: none;
+      width: 24px; height: 24px; border-radius: 50%; background: var(--green);
+      color: #fff; font-weight: 800; font-size: .9rem; margin-right: 8px;
+    }
+    .line-row { display: flex; align-items: center; margin: 0 0 8px; font-weight: 700; color: var(--charcoal); }
+    .btn-line svg { width: 22px; height: 22px; margin-right: 8px; fill: currentColor; }
+    .line-cta { display: inline-flex; align-items: center; justify-content: center; }
+    .line-sub { font-size: .9rem; color: var(--ink-soft); margin: 6px 0 22px; text-align: center; }
+    .line-sub a { color: var(--green-deep); font-weight: 700; }
+    .order-box {
+      background: var(--cream, #faf7f0); border: 1px solid var(--line); border-radius: var(--radius-lg);
+      padding: 14px 16px; margin: 8px 0 10px; font-size: .9rem; line-height: 1.65; color: var(--charcoal);
+      white-space: pre-wrap; word-break: break-word; max-height: 220px; overflow-y: auto;
+    }
+    .copy-btn {
+      background: none; border: 1px solid var(--line); color: var(--ink-soft); cursor: pointer;
+      font: inherit; font-size: .85rem; font-weight: 700; padding: 7px 14px; border-radius: var(--pill, 999px);
+    }
+    .copy-btn:hover { border-color: var(--green); color: var(--green-deep); }
   </style>
 </head>
 <body>
@@ -37,21 +66,79 @@
         <p data-ja="ご決済が完了しました。確認メールをお送りしています。KUMAGO の担当より配送日時の最終確認をご連絡いたします。">
           付款已完成，確認信已寄出。KUMAGO 專員會再與你聯繫，確認配送日期與時段。
         </p>
-        <p data-ja="ご不明点は LINE までお気軽にどうぞ。">有任何問題，歡迎隨時透過 LINE 與我們聯繫。</p>
+        <p data-ja="配送日時の最終確認のため、公式 LINE の追加をお願いいたします。" id="introLine">為了確認配送日期，最後請加入官方 LINE 並把訂單傳給客服。</p>
+
+        <!-- LINE handoff: add the official account, then send the prefilled order -->
+        <div class="line-step">
+          <h2 data-ja="最後のステップ：公式 LINE で注文を送信" id="lineH2">最後一步：把訂單傳給 LINE 客服</h2>
+          <p data-ja="公式 LINE を追加し、ご注文内容をそのまま送信してください。" id="lineDesc">加入官方 LINE 好友，並把下方訂單內容傳送給客服即可。</p>
+
+          <div class="line-row"><span class="line-num">1</span><span data-ja="公式 LINE を友だち追加" id="step1Label">加入官方 LINE 好友</span></div>
+          <a id="addFriendBtn" href="https://lin.ee/z3yASqK" target="_blank" rel="noopener" class="btn btn-line btn-block line-cta">
+            <svg viewBox="0 0 24 24"><path d="M12 4c4.97 0 9 3.13 9 7 0 3.87-4.03 7-9 7a11 11 0 01-2.4-.26L5 20l1-3.2C4.16 15.5 3 13.4 3 11c0-3.87 4.03-7 9-7z"/></svg>
+            <span data-ja="LINE を友だち追加" id="addFriendLabel">加入官方 LINE</span>
+          </a>
+          <p class="line-sub" data-ja="追加済みの方はそのまま次へ。" id="addFriendSub">已經是好友的話，直接進行下一步即可。</p>
+
+          <div class="line-row"><span class="line-num">2</span><span data-ja="ご注文内容を客服へ送信" id="step2Label">把訂單詳細傳給客服</span></div>
+          <div class="order-box" id="orderBox" hidden></div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+            <button type="button" class="copy-btn" id="copyBtn" hidden data-ja="注文内容をコピー">複製訂單內容</button>
+          </div>
+          <a id="sendOrderBtn" href="https://line.me/R/ti/p/@967bmevi" target="_blank" rel="noopener" class="btn btn-line btn-block line-cta">
+            <svg viewBox="0 0 24 24"><path d="M12 4c4.97 0 9 3.13 9 7 0 3.87-4.03 7-9 7a11 11 0 01-2.4-.26L5 20l1-3.2C4.16 15.5 3 13.4 3 11c0-3.87 4.03-7 9-7z"/></svg>
+            <span data-ja="LINE で注文内容を送信" id="sendOrderLabel">用 LINE 傳送訂單詳細</span>
+          </a>
+        </div>
+
         <div class="thanks-actions">
-          <a href="index.html" class="btn btn-primary" data-ja="トップへ戻る">回到首頁</a>
-          <a href="index.html#contact" class="btn btn-secondary" data-ja="LINEで問い合わせ">LINE 諮詢</a>
+          <a href="index.html" class="btn btn-secondary" data-ja="トップへ戻る">回到首頁</a>
         </div>
       </div>
     </div>
   </main>
   <script>
-    // honour the ?lang or stored preference minimally; default zh
     (function () {
-      var p = new URLSearchParams(location.search);
-      if (p.get("lang") === "ja") {
+      var KEY = "kumago_paid_order";
+      var stash = null;
+      try { stash = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { stash = null; }
+
+      // Language: prefer the order's own lang, then ?lang, default zh.
+      var urlLang = new URLSearchParams(location.search).get("lang");
+      var lang = (stash && stash.lang) || urlLang || "zh";
+      if (lang === "ja") {
         document.documentElement.lang = "ja";
         document.querySelectorAll("[data-ja]").forEach(function (el) { el.textContent = el.dataset.ja; });
+      }
+
+      // Wire up the prefilled order handoff when we have a stashed order.
+      if (stash && stash.msg) {
+        var box = document.getElementById("orderBox");
+        box.textContent = stash.msg;
+        box.hidden = false;
+
+        var sendBtn = document.getElementById("sendOrderBtn");
+        if (stash.deeplink) sendBtn.href = stash.deeplink;
+        if (stash.addFriend) document.getElementById("addFriendBtn").href = stash.addFriend;
+
+        var copyBtn = document.getElementById("copyBtn");
+        copyBtn.hidden = false;
+        var copied = lang === "ja" ? "コピーしました ✓" : "已複製 ✓";
+        var copyLabel = copyBtn.textContent;
+        copyBtn.addEventListener("click", function () {
+          var done = function () { copyBtn.textContent = copied; setTimeout(function () { copyBtn.textContent = copyLabel; }, 1800); };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(stash.msg).then(done, function () {});
+          } else {
+            var ta = document.createElement("textarea");
+            ta.value = stash.msg; document.body.appendChild(ta); ta.select();
+            try { document.execCommand("copy"); done(); } catch (e) {}
+            document.body.removeChild(ta);
+          }
+        });
+
+        // Single-use: clear so a later visit to /success won't resurface this order.
+        try { localStorage.removeItem(KEY); } catch (e) {}
       }
     })();
   </script>
