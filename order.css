@@ -286,6 +286,12 @@
 .pay-secure { margin-top: 12px; text-align: center; font-size: .76rem; color: var(--ink-soft); }
 .pay-secure svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 3px; }
 
+.pay-policy {
+  margin-top: 12px; padding: 10px 12px;
+  background: var(--cream, #faf7f0); border: 1px solid var(--line);
+  border-radius: 12px; font-size: .8rem; line-height: 1.6; color: var(--ink-soft);
+}
+
 .back-link {
   display: inline-flex; align-items: center; gap: 6px;
   margin-bottom: 8px; font-size: .9rem; color: var(--ink-soft); font-weight: 600;
