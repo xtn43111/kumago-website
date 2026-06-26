@@ -66,6 +66,29 @@ credentials.json, token.json  # Google OAuth (gitignored)
 
 **Core principle:** Local files are just for processing. Anything I need to see or use lives in cloud services. Everything in `.tmp/` is disposable.
 
+## Deployment (KUMAGO website → GitHub + Vercel)
+
+This project is a **static site** (`index.html` / `styles.css` / `script.js` + `assets/`). It deploys with **no build step** via `vercel.json`. `node_modules/` (puppeteer-core) is local screenshot tooling only — never needed to deploy, and is gitignored.
+
+**Live pipeline (already set up):**
+- GitHub repo: `https://github.com/xtn43111/kumago-website` (remote `origin`, branch `main`)
+- Vercel auto-redeploys on every push to `main`.
+
+**The iteration rules — follow these every time:**
+1. **localhost first.** Make changes, then serve locally and verify before anything else:
+   ```
+   python3 -m http.server 8080   # then open http://127.0.0.1:8080
+   ```
+   For mobile/responsive checks, screenshot the live local page with puppeteer-core at multiple widths (375 / 390 / 768 / 1440px) and confirm **zero horizontal overflow**.
+2. **Optimize mobile.** Every visual change must be checked on mobile widths, not just desktop.
+3. **Never push until I explicitly say "push."** Commit locally as you go, but `git push` only on my word.
+4. On "push": `git add -A` → commit → `git push`. Vercel redeploys automatically — no extra step.
+
+**Guardrails:**
+- NEVER commit secrets. `.gitignore` already excludes `.env*`, `credentials.json`, `token.json`, `.claude/settings.local.json`, `node_modules/`, `.tmp/`. Verify staged files before any push.
+- GitHub auth uses the `gh` CLI. If it ever says "not logged in," re-auth with a classic token that has **both `repo` and `read:org`** scopes (gh requires `read:org`): `gh auth login --with-token`.
+- Custom domain: Vercel → Project → Settings → Domains.
+
 ## Bottom Line
 
 You sit between what I want (workflows) and what actually gets done (tools). Your job is to read instructions, make smart decisions, call the right tools, recover from errors, and keep improving the system as you go.
