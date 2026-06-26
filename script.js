@@ -23,29 +23,28 @@
   });
   nav.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeNav));
 
-  /* ---- language toggle (zh-Hant ⇄ ja) ----
-     Chinese is the default content in the markup; Japanese strings live in
-     data-ja / data-ja-html / data-ja-ph attributes. We cache the original
-     Chinese on first switch so toggling back is lossless. */
+  /* ---- language toggle (zh-Hant ⇄ ja ⇄ en) ----
+     Chinese is the default content in the markup; Japanese and English strings
+     live in data-ja/data-en (text), data-ja-html/data-en-html (rich markup).
+     We cache the original Chinese on first switch so returning to 中 is lossless.
+     Any missing translation falls back to the cached Chinese. */
   const langBtn = document.getElementById("langToggle");
-  const HTML_LANG = { zh: "zh-Hant", ja: "ja" };
+  const HTML_LANG = { zh: "zh-Hant", ja: "ja", en: "en" };
   let currentLang = "zh";
 
   const applyLang = (lang) => {
-    if (lang === currentLang) return;
-    const toJa = lang === "ja";
+    if (lang === currentLang || !HTML_LANG[lang]) return;
 
-    document.querySelectorAll("[data-ja]").forEach((el) => {
+    document.querySelectorAll("[data-ja], [data-en]").forEach((el) => {
       if (el.dataset.zhCache === undefined) el.dataset.zhCache = el.textContent;
-      el.textContent = toJa ? el.dataset.ja : el.dataset.zhCache;
+      const next = lang === "zh" ? el.dataset.zhCache : el.dataset[lang];
+      el.textContent = next != null ? next : el.dataset.zhCache;
     });
-    document.querySelectorAll("[data-ja-html]").forEach((el) => {
+    document.querySelectorAll("[data-ja-html], [data-en-html]").forEach((el) => {
       if (el.dataset.zhCacheHtml === undefined) el.dataset.zhCacheHtml = el.innerHTML;
-      el.innerHTML = toJa ? el.dataset.jaHtml : el.dataset.zhCacheHtml;
-    });
-    document.querySelectorAll("[data-ja-ph]").forEach((el) => {
-      if (el.dataset.zhCachePh === undefined) el.dataset.zhCachePh = el.placeholder;
-      el.placeholder = toJa ? el.dataset.jaPh : el.dataset.zhCachePh;
+      const key = lang === "ja" ? "jaHtml" : lang === "en" ? "enHtml" : null;
+      const next = key ? el.dataset[key] : null;
+      el.innerHTML = next != null ? next : el.dataset.zhCacheHtml;
     });
 
     document.documentElement.lang = HTML_LANG[lang];
@@ -56,14 +55,14 @@
   };
 
   if (langBtn) {
-    langBtn.addEventListener("click", () =>
-      applyLang(currentLang === "zh" ? "ja" : "zh")
+    langBtn.querySelectorAll(".lang-opt").forEach((opt) =>
+      opt.addEventListener("click", () => applyLang(opt.dataset.lang))
     );
   }
 
   /* ---- scroll reveal ---- */
   const revealTargets = document.querySelectorAll(
-    ".section-head, .cat-card, .feature, .step, .product, .quote, .stats, .hero-copy, .hero-visual, .cta-text, .cta-form"
+    ".section-head, .cat-card, .feature, .step, .product, .quote, .stats, .hero-copy, .hero-visual, .cta-text, .cta-line-card"
   );
   revealTargets.forEach((el, i) => {
     el.classList.add("reveal");
@@ -87,20 +86,4 @@
     revealTargets.forEach((el) => el.classList.add("in"));
   }
 
-  /* ---- demo form handler ---- */
-  const form = document.querySelector(".cta-form");
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const btn = form.querySelector("button[type=submit]");
-      const original = btn.textContent;
-      btn.textContent = currentLang === "ja" ? "受け付けました！" : "已收到，謝謝你！";
-      btn.style.background = "#3B3B3B";
-      form.reset();
-      setTimeout(() => {
-        btn.textContent = original;
-        btn.style.background = "";
-      }, 2600);
-    });
-  }
 })();
