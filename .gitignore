@@ -13,3 +13,5 @@ token.json
 # temp / intermediate processing
 .tmp/
 .DS_Store
+.vercel
+.env*
