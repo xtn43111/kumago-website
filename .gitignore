@@ -1,0 +1,15 @@
+# dependencies (puppeteer-core is local screenshot tooling only — not needed to deploy)
+node_modules/
+
+# secrets & credentials — NEVER commit these
+.env
+.env.*
+credentials.json
+token.json
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# temp / intermediate processing
+.tmp/
+.DS_Store
