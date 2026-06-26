@@ -111,8 +111,28 @@
             </div>
 
             <div class="field">
-              <label for="fAddress" data-ja="お届け先住所">配送地址</label>
-              <input id="fAddress" type="text" placeholder="大阪市〇〇区〇〇 1-2-3 〇〇マンション" data-ja-ph="大阪市〇〇区〇〇 1-2-3 〇〇マンション" />
+              <label for="fPostal" data-ja="郵便番号">郵便番號（郵遞區號）</label>
+              <div class="postal-row">
+                <input id="fPostal" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="8" placeholder="530-0001" data-ja-ph="530-0001" />
+                <button type="button" id="postalBtn" class="btn-postal" data-ja="住所を自動入力">自動帶入地址</button>
+              </div>
+              <p class="field-hint" id="postalHint" hidden></p>
+            </div>
+
+            <div class="field">
+              <label for="fAddr1" data-ja="都道府県・市区町村・町名">縣市・區・町名</label>
+              <input id="fAddr1" type="text" placeholder="輸入郵便番號可自動帶入" data-ja-ph="郵便番号で自動入力されます" />
+            </div>
+
+            <div class="form-row two">
+              <div class="field">
+                <label for="fBanchi" data-ja="丁目・番地・号">丁目・番地・號</label>
+                <input id="fBanchi" type="text" placeholder="1-2-3" data-ja-ph="1-2-3" />
+              </div>
+              <div class="field">
+                <label for="fBuilding" data-ja="建物名">建築物名稱</label>
+                <input id="fBuilding" type="text" placeholder="〇〇マンション（沒有可留空）" data-ja-ph="〇〇マンション（任意）" />
+              </div>
             </div>
 
             <div class="form-row two">
@@ -121,13 +141,21 @@
                 <input id="fRoom" type="text" placeholder="例：305" data-ja-ph="例：305" />
                 <label class="checkbox-line">
                   <input id="fNoRoom" type="checkbox" />
-                  <span data-ja="部屋番号なし（戸建てなど）">無房號（透天等）</span>
+                  <span data-ja="部屋番号なし（戸建てなど）">無房號（一戶建等）</span>
                 </label>
               </div>
               <div class="field">
                 <label data-ja="エレベーターの有無">是否有電梯</label>
                 <div class="seg" id="fElevator"></div>
               </div>
+            </div>
+
+            <div class="map-confirm">
+              <a id="mapLink" class="btn-map is-disabled" target="_blank" rel="noopener" href="#" aria-disabled="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-5.6 7-11a7 7 0 10-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                <span data-ja="Googleマップで位置を確認">在 Google 地圖確認位置</span>
+              </a>
+              <p class="map-hint" data-ja="住所を入力すると、Googleマップで配送先の位置をご確認いただけます。">填入地址後，可在 Google 地圖確認配送位置是否正確。</p>
             </div>
           </section>
 

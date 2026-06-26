@@ -61,7 +61,8 @@ module.exports = async function handler(req, res) {
   body = body || {};
 
   const { plan, duration, addons = [], area, moveInDate, time,
-          address, room, noRoom, elevator, name, contact, lang } = body;
+          address, postal, building, mapUrl,
+          room, noRoom, elevator, name, contact, lang } = body;
 
   // ---- validate core selection ----
   if (!PLAN_PRICES[plan] || !PLAN_PRICES[plan][duration]) {
@@ -118,7 +119,10 @@ module.exports = async function handler(req, res) {
     area,
     move_in_date: moveInDate,
     delivery_time: time,
+    postal: postal || "",
+    building: building || "",
     address: `${address} ${noRoom ? "(no room#)" : room || ""}`.trim(),
+    map_url: mapUrl || "",
     elevator,
     customer_name: name,
     customer_contact: contact,

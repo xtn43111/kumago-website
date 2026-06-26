@@ -17,6 +17,7 @@
       name: { zh: "A 套組", ja: "A セット" },
       desc: { zh: "冷凍冷藏庫 90–130L・洗衣機 4.2–6kg・微波爐",
               ja: "冷凍冷蔵庫 90〜130L・洗濯機 4.2〜6kg・電子レンジ" },
+      img: "assets/sets/set_A.jpg",
       prices: { "1個月": 28400, "2個月": 31130, "3個月": 32920, "4個月": 36250,
                 "5個月": 37430, "半年": 38490, "1年": 45100, "2年": 63250 },
     },
@@ -24,6 +25,7 @@
       name: { zh: "B 套組", ja: "B セット" },
       desc: { zh: "A 套組 ＋ 單人床架與床墊",
               ja: "A セット ＋ シングルベッドフレーム・マットレス" },
+      img: "assets/sets/set_B.jpg",
       prices: { "1個月": 32910, "2個月": 35640, "3個月": 38400, "4個月": 41820,
                 "5個月": 43640, "半年": 46270, "1年": 55080, "2年": 69990 },
     },
@@ -31,6 +33,7 @@
       name: { zh: "C 套組", ja: "C セット" },
       desc: { zh: "A 套組 ＋ 半雙人床架與床墊",
               ja: "A セット ＋ セミダブルベッドフレーム・マットレス" },
+      img: "assets/sets/set_C.jpg",
       prices: { "1個月": 46980, "2個月": 49360, "3個月": 52430, "4個月": 55690,
                 "5個月": 59350, "半年": 62340, "1年": 72320, "2年": 91630 },
     },
@@ -52,7 +55,7 @@
     { key: "rice_cooker",   price: 7000, zh: "電飯鍋",       ja: "炊飯器" },
     { key: "pot",           price: 7000, zh: "鍋具組",       ja: "鍋セット" },
     { key: "clothesline",   price: 1800, zh: "曬衣桿",       ja: "物干し竿" },
-  ];
+  ].map((a) => ({ ...a, img: `assets/addons/${a.key}.jpg` }));
 
   const AREAS = [
     { key: "osaka", online: true,  zh: "大阪市內", ja: "大阪市内" },
@@ -78,9 +81,9 @@
   const L = () => (document.documentElement.lang === "ja" ? "ja" : "zh");
   const T = {
     durLabel: (d) => {
-      if (d === "半年") return L() === "ja" ? "半年" : "半年";
-      if (d === "1年") return L() === "ja" ? "1 年" : "1 年";
-      if (d === "2年") return L() === "ja" ? "2 年" : "2 年";
+      if (d === "半年") return "半年";
+      if (d === "1年") return "1 年";
+      if (d === "2年") return "2 年";
       const n = d.replace("個月", "");
       return L() === "ja" ? `${n} ヶ月` : `${n} 個月`;
     },
@@ -110,12 +113,12 @@
       el.className = "opt-card plan-card" + (state.plan === k ? " is-selected" : "");
       el.dataset.plan = k;
       el.innerHTML =
-        `<span class="plan-letter">${k}</span>` +
-        `<span class="opt-main">` +
-          `<span class="opt-title">${p.name[L()]}</span>` +
+        `<span class="plan-photo"><img src="${p.img}" alt="${p.name[L()]}" loading="lazy" /></span>` +
+        `<span class="plan-info">` +
+          `<span class="plan-head"><span class="plan-letter">${k}</span><span class="opt-title">${p.name[L()]}</span></span>` +
           `<span class="opt-desc">${p.desc[L()]}</span>` +
-        `</span>` +
-        `<span class="opt-from">${T.t("最低", "最安")} ${T.yen(Math.min.apply(null, Object.values(p.prices)))}~</span>`;
+          `<span class="opt-from">${T.t("最低", "最安")} ${T.yen(Math.min.apply(null, Object.values(p.prices)))}~</span>` +
+        `</span>`;
       el.addEventListener("click", () => {
         state.plan = k;
         renderPlans();
@@ -163,9 +166,9 @@
       el.className = "addon-chip" + (state.addons.has(a.key) ? " is-selected" : "");
       el.dataset.addon = a.key;
       el.innerHTML =
-        `<span class="addon-check" aria-hidden="true"></span>` +
-        `<span class="addon-name">${a[L()]}</span>` +
-        `<span class="addon-price">${T.yen(a.price)}</span>`;
+        `<span class="addon-photo"><img src="${a.img}" alt="${a[L()]}" loading="lazy" /><span class="addon-check" aria-hidden="true"></span></span>` +
+        `<span class="addon-meta"><span class="addon-name">${a[L()]}</span>` +
+        `<span class="addon-price">${T.yen(a.price)}</span></span>`;
       el.addEventListener("click", () => {
         if (state.addons.has(a.key)) state.addons.delete(a.key);
         else state.addons.add(a.key);
@@ -223,6 +226,61 @@
     });
   }
 
+  /* =================== POSTAL CODE → ADDRESS (zipcloud) =================== */
+  async function lookupPostal() {
+    const raw = ($("#fPostal").value || "").replace(/[^0-9]/g, "");
+    const hint = $("#postalHint");
+    if (raw.length !== 7) {
+      hint.hidden = false;
+      hint.className = "field-hint err";
+      hint.textContent = T.t("請輸入 7 位數郵便番號（例：530-0001）", "7桁の郵便番号を入力してください（例：530-0001）");
+      return;
+    }
+    hint.hidden = false;
+    hint.className = "field-hint";
+    hint.textContent = T.t("查詢中…", "検索中…");
+    try {
+      const r = await fetch("https://zipcloud.ibsnet.co.jp/api/search?zipcode=" + raw);
+      const j = await r.json();
+      if (j.status === 200 && j.results && j.results.length) {
+        const a = j.results[0];
+        $("#fAddr1").value = `${a.address1}${a.address2}${a.address3}`;
+        hint.className = "field-hint ok";
+        hint.textContent = T.t("已帶入地址，請接著填寫番地與建物名", "住所を入力しました。番地・建物名をご記入ください");
+        $("#fBanchi").focus();
+        updateMapLink();
+      } else {
+        hint.className = "field-hint err";
+        hint.textContent = T.t("查無此郵便番號，請確認後再試", "該当する住所が見つかりません。番号をご確認ください");
+      }
+    } catch (e) {
+      hint.className = "field-hint err";
+      hint.textContent = T.t("查詢失敗，請手動輸入地址", "検索に失敗しました。住所を手入力してください");
+    }
+  }
+
+  /* =================== GOOGLE MAP CONFIRM =================== */
+  function mapQuery() {
+    const addr1 = $("#fAddr1").value.trim();
+    const banchi = $("#fBanchi").value.trim();
+    const building = $("#fBuilding").value.trim();
+    return [addr1, banchi, building].filter(Boolean).join(" ").trim();
+  }
+  function updateMapLink() {
+    const q = mapQuery();
+    const link = $("#mapLink");
+    const ready = $("#fAddr1").value.trim() && $("#fBanchi").value.trim();
+    if (ready) {
+      link.href = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q);
+      link.classList.remove("is-disabled");
+      link.setAttribute("aria-disabled", "false");
+    } else {
+      link.href = "#";
+      link.classList.add("is-disabled");
+      link.setAttribute("aria-disabled", "true");
+    }
+  }
+
   /* =================== TOTAL + SUMMARY =================== */
   function lineItems() {
     const items = [];
@@ -258,7 +316,6 @@
     }
     $("#sumTotal").textContent = T.yen(total);
 
-    // 市外 → 顯示運費備註並切換 CTA
     const onlineArea = isOnlineArea();
     $("#shipNote").hidden = onlineArea;
     updateCta(total, onlineArea);
@@ -284,6 +341,10 @@
   }
 
   /* =================== VALIDATION =================== */
+  function fullAddress(d) {
+    return [d.addr1, d.banchi, d.building].filter(Boolean).join(" ").trim();
+  }
+
   function collectForm() {
     return {
       plan: state.plan,
@@ -292,12 +353,16 @@
       area: state.area,
       moveInDate: $("#fDate").value.trim(),
       time: $("#fTime").value,
-      address: $("#fAddress").value.trim(),
+      postal: $("#fPostal").value.trim(),
+      addr1: $("#fAddr1").value.trim(),
+      banchi: $("#fBanchi").value.trim(),
+      building: $("#fBuilding").value.trim(),
       room: $("#fNoRoom").checked ? "" : $("#fRoom").value.trim(),
       noRoom: $("#fNoRoom").checked,
       elevator: $("#fElevator").dataset.value || "",
       name: $("#fName").value.trim(),
       contact: $("#fContact").value.trim(),
+      mapUrl: mapQuery() ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(mapQuery()) : "",
       lang: L(),
     };
   }
@@ -308,7 +373,8 @@
     if (!d.duration) miss.push(T.t("租期", "レンタル期間"));
     if (!d.moveInDate) miss.push(T.t("入住日", "入居日"));
     if (!d.time) miss.push(T.t("到貨時段", "配送時間帯"));
-    if (!d.address) miss.push(T.t("配送地址", "お届け先住所"));
+    if (!d.addr1) miss.push(T.t("縣市區町名（可用郵便番號帶入）", "住所（郵便番号で自動入力可）"));
+    if (!d.banchi) miss.push(T.t("丁目・番地・號", "番地"));
     if (!d.noRoom && !d.room) miss.push(T.t("房號（或勾選無房號）", "部屋番号（または「部屋番号なし」）"));
     if (!d.elevator) miss.push(T.t("電梯", "エレベーター"));
     if (!d.name) miss.push(T.t("姓名", "お名前"));
@@ -337,7 +403,8 @@
       `${T.t("小計", "小計")}：${T.yen(total)}（${T.t("未含市外運費", "市外送料別")}）`,
       `${T.t("配送地區", "配送エリア")}：${areaName}`,
       `${T.t("入住日", "入居日")}：${d.moveInDate}　${d.time}`,
-      `${T.t("地址", "住所")}：${d.address} ${d.room}`,
+      `${T.t("地址", "住所")}：〒${d.postal} ${fullAddress(d)} ${d.room}`.trim(),
+      d.mapUrl ? `${T.t("地圖", "地図")}：${d.mapUrl}` : "",
       `${T.t("電梯", "EV")}：${d.elevator}`,
       `${T.t("姓名", "お名前")}：${d.name}`,
       `${T.t("聯絡", "連絡先")}：${d.contact}`,
@@ -354,22 +421,21 @@
     }
     showError("");
 
-    // 市外 → 導 LINE 報價
     if (!isOnlineArea()) {
       window.location.href = buildLineDeeplink(d);
       return;
     }
 
-    // 大阪市內 → Stripe Checkout
     const btn = $("#payBtn");
     const original = btn.textContent;
     btn.disabled = true;
     btn.textContent = T.t("前往付款頁面…", "決済ページへ…");
     try {
+      const payload = Object.assign({}, d, { address: fullAddress(d) });
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(d),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (!res.ok || !json.url) throw new Error(json.error || "checkout_failed");
@@ -392,7 +458,6 @@
     renderAreaTimeSelects();
     renderElevator();
 
-    // preselect plan from ?plan=B
     const pre = new URLSearchParams(location.search).get("plan");
     if (pre && PLANS[pre.toUpperCase()]) {
       state.plan = pre.toUpperCase();
@@ -401,15 +466,26 @@
       renderDurations();
     }
 
-    $("#fArea").addEventListener("change", (e) => {
-      state.area = e.target.value;
-      recalc();
-    });
+    $("#fArea").addEventListener("change", (e) => { state.area = e.target.value; recalc(); });
     $("#fTime").addEventListener("change", recalc);
     $("#fNoRoom").addEventListener("change", (e) => {
       $("#fRoom").disabled = e.target.checked;
       if (e.target.checked) $("#fRoom").value = "";
     });
+
+    // postal autofill
+    $("#postalBtn").addEventListener("click", lookupPostal);
+    $("#fPostal").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); lookupPostal(); } });
+    $("#fPostal").addEventListener("input", (e) => {
+      const digits = e.target.value.replace(/[^0-9]/g, "");
+      if (digits.length === 7) lookupPostal(); // auto when 7 digits typed
+    });
+
+    // map link updates as address changes
+    ["#fAddr1", "#fBanchi", "#fBuilding"].forEach((s) =>
+      $(s).addEventListener("input", updateMapLink)
+    );
+
     $("#payBtn").addEventListener("click", onSubmit);
 
     // 語言切換時，重繪 JS 動態產生的字串
@@ -422,11 +498,11 @@
       recalc();
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
 
-    // 今天以後才能選配送日
     const today = new Date();
     today.setDate(today.getDate() + 1);
     $("#fDate").min = today.toISOString().slice(0, 10);
 
+    updateMapLink();
     recalc();
   }
 
