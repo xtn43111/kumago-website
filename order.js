@@ -23,16 +23,16 @@
     },
     B: {
       name: { zh: "B 套組", ja: "B セット" },
-      desc: { zh: "A 套組 ＋ 單人床架與床墊",
-              ja: "A セット ＋ シングルベッドフレーム・マットレス" },
+      desc: { zh: "A 套組 ＋ 單人床架與床墊（寬 100cm）",
+              ja: "A セット ＋ シングルベッドフレーム・マットレス（幅100cm）" },
       img: "assets/sets/set_B.jpg",
       prices: { "1個月": 32910, "2個月": 35640, "3個月": 38400, "4個月": 41820,
                 "5個月": 43640, "半年": 46270, "1年": 55080, "2年": 69990 },
     },
     C: {
       name: { zh: "C 套組", ja: "C セット" },
-      desc: { zh: "A 套組 ＋ 半雙人床架與床墊",
-              ja: "A セット ＋ セミダブルベッドフレーム・マットレス" },
+      desc: { zh: "A 套組 ＋ 單人加大床架與床墊（寬 120cm）",
+              ja: "A セット ＋ セミダブルベッドフレーム・マットレス（幅120cm）" },
       img: "assets/sets/set_C.jpg",
       prices: { "1個月": 46980, "2個月": 49360, "3個月": 52430, "4個月": 55690,
                 "5個月": 59350, "半年": 62340, "1年": 72320, "2年": 91630 },
@@ -58,7 +58,7 @@
   ].map((a) => ({ ...a, img: `assets/addons/${a.key}.jpg` }));
 
   /* =================== 配送費（依郵便番號辨識的市區自動計算） ===================
-     大阪市內免費；大阪府其他市、奈良・京都・兵庫依下表加收市外配送費。
+     大阪市內無料；大阪府其他市、奈良・京都・兵庫依下表加收市外配送費。
      清單外的地區無法線上估價 → 導去 LINE 人工報價。
      ⚠ 與後端 api/create-checkout-session.js 的 shippingFee() 必須保持同步。 */
   const SHIP_OSAKA_TIERS = [
@@ -87,7 +87,7 @@
     const ok = (fee, zh, ja) => ({ fee, online: true, zh: zh || city, ja: ja || city });
     const no = () => ({ fee: null, online: false, zh: city || pref || "", ja: city || pref || "" });
     if (pref === "大阪府") {
-      if (has("大阪市")) return ok(0, "大阪市內（免費配送）", "大阪市内（配送無料）");
+      if (has("大阪市")) return ok(0, "大阪市內（無料配送）", "大阪市内（配送無料）");
       for (const tier of SHIP_OSAKA_TIERS) if (tier.cities.some(has)) return ok(tier.fee);
       return no();
     }
@@ -274,7 +274,7 @@
       );
     } else if (s.fee === 0) {
       box.className = "ship-zone ok";
-      box.textContent = T.t(`配送地區：${s.zh}・運費免費`, `配送エリア：${s.ja}・送料無料`);
+      box.textContent = T.t(`配送地區：${s.zh}・運費無料`, `配送エリア：${s.ja}・送料無料`);
     } else {
       box.className = "ship-zone";
       box.textContent = T.t(
