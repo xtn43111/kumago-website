@@ -126,6 +126,8 @@ html[lang="ja"] h1, html[lang="ja"] h2, html[lang="ja"] h3, html[lang="ja"] h4 {
 }
 .lang-opt.is-active { background: var(--green); color: #fff; }
 
+.nav-actions { display: flex; align-items: center; gap: 12px; }
+
 .nav-toggle { display: none; flex-direction: column; gap: 5px; background: none; border: 0; cursor: pointer; padding: 8px; }
 .nav-toggle span { width: 26px; height: 3px; background: var(--charcoal); border-radius: 3px; transition: .3s var(--ease); }
 .nav-toggle.open span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
@@ -428,6 +430,9 @@ html[lang="ja"] h1, html[lang="ja"] h2, html[lang="ja"] h3, html[lang="ja"] h4 {
   .footer-bottom { flex-direction: column; gap: 14px; text-align: center; }
   .btn { width: 100%; }
   .hero-actions { flex-direction: column; }
+  .nav-actions { gap: 6px; }
+  .lang-opt { padding: 4px 8px; font-size: .82rem; }
+  .nav-toggle { padding: 8px 4px; }
 }
 
 /* ---------- rental set cards ---------- */
