@@ -52,6 +52,7 @@
     { key: "fan",           price: 4500, zh: "電風扇",       ja: "扇風機" },
     { key: "clothes_rack",  price: 4500, zh: "室內掛衣架",   ja: "室内物干しラック" },
     { key: "desk",          price: 9000, zh: "桌椅組",       ja: "デスク・チェアセット" },
+    { key: "low_table",     price: 6000, zh: "和式桌（75×50×31.5cm）", ja: "和式テーブル（75×50×31.5cm）" },
     { key: "rice_cooker",   price: 7000, zh: "電飯鍋",       ja: "炊飯器" },
     { key: "pot",           price: 7000, zh: "鍋具組",       ja: "鍋セット" },
     { key: "clothesline",   price: 1800, zh: "曬衣桿",       ja: "物干し竿" },
