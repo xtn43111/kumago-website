@@ -88,7 +88,7 @@
     const ok = (fee, zh, ja) => ({ fee, online: true, zh: zh || city, ja: ja || city });
     const no = () => ({ fee: null, online: false, zh: city || pref || "", ja: city || pref || "" });
     if (pref === "大阪府") {
-      if (has("大阪市")) return ok(0, "大阪市內（無料配送）", "大阪市内（配送無料）");
+      if (has("大阪市")) return ok(0, "大阪市內（免費配送）", "大阪市内（配送無料）");
       for (const tier of SHIP_OSAKA_TIERS) if (tier.cities.some(has)) return ok(tier.fee);
       return no();
     }
@@ -275,7 +275,7 @@
       );
     } else if (s.fee === 0) {
       box.className = "ship-zone ok";
-      box.textContent = T.t(`配送地區：${s.zh}・運費無料`, `配送エリア：${s.ja}・送料無料`);
+      box.textContent = T.t(`配送地區：${s.zh}・免運費`, `配送エリア：${s.ja}・送料無料`);
     } else {
       box.className = "ship-zone";
       box.textContent = T.t(
