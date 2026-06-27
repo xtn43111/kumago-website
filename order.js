@@ -581,21 +581,27 @@
     const items = lineItems();
     const total = items.reduce((s, i) => s + i.amount, 0);
     const areaName = (state.ship && state.ship[L()]) || d.area || `〒${d.postal}`;
+    // Customer/delivery info up top (who・when・where) so 客服 can act at a glance;
+    // items + total drop to the bottom. null = drop optional line, "" = blank spacer.
     const lines = [
       T.t("【KUMAGO 線上訂單・已完成付款】", "【KUMAGO オンライン注文・決済完了】"),
-      items.map((i) => `・${i.label}　${T.yen(i.amount)}`).join("\n"),
-      `${T.t("總金額", "合計")}：${T.yen(total)}`,
+      "",
+      `${T.t("姓名", "お名前")}：${d.name}`,
+      `${T.t("聯絡", "連絡先")}：${d.contact}`,
       `${T.t("入住日", "入居日")}：${d.moveInDate}　${d.time}`,
       `${T.t("配送地區", "配送エリア")}：${areaName}`,
       `${T.t("地址", "住所")}：〒${d.postal} ${fullAddress(d)} ${d.room}`.trim(),
-      d.mapUrl ? `${T.t("地圖", "地図")}：${d.mapUrl}` : "",
+      d.mapUrl ? `${T.t("地圖", "地図")}：${d.mapUrl}` : null,
       `${T.t("電梯", "EV")}：${d.elevator}`,
-      `${T.t("姓名", "お名前")}：${d.name}`,
-      `${T.t("聯絡", "連絡先")}：${d.contact}`,
-      d.note ? `${T.t("備註", "備考")}：${d.note}` : "",
+      d.note ? `${T.t("備註", "備考")}：${d.note}` : null,
+      "",
+      T.t("―― 訂單明細 ――", "―― 注文明細 ――"),
+      ...items.map((i) => `・${i.label}　${T.yen(i.amount)}`),
+      `${T.t("總金額", "合計")}：${T.yen(total)}`,
+      "",
       T.t("（已完成線上付款，麻煩協助確認配送日期與時段，謝謝！）",
           "（オンライン決済が完了しました。配送日時のご確認をお願いいたします。）"),
-    ].filter(Boolean);
+    ].filter((l) => l !== null);
     const msg = lines.join("\n");
     return {
       msg: msg,

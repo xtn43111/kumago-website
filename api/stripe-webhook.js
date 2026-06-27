@@ -15,8 +15,9 @@
  */
 
 const crypto = require("crypto");
-const { sendOrderEmails } = require("../lib/mailer.js");
+const { sendOrderEmails, orderView } = require("../lib/mailer.js");
 const { createOrderEvent } = require("../lib/gcal.js");
+const { buildOrderPush, sendTelegram } = require("../lib/telegram.js");
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -125,7 +126,20 @@ module.exports = async function handler(req, res) {
   if (cal.errors && cal.errors.length) console.error("stripe-webhook calendar errors:", cal.errors);
   console.log("stripe-webhook: calendar", JSON.stringify({ id: session.id, ...cal }));
 
-  return res.status(200).json({ received: true, emails: report, calendar: cal });
+  // Instant per-order push to the owner's Telegram (separate from the daily
+  // digest). Same resilience contract as email/calendar: never throw, never make
+  // Stripe retry — the payment is already captured. No-ops if the bot is unset.
+  let tg = { sent: false, errors: [] };
+  try {
+    await sendTelegram(buildOrderPush(orderView(meta, lineItems, amountTotal)));
+    tg.sent = true;
+  } catch (e) {
+    console.error("stripe-webhook: telegram push threw:", e);
+    tg.errors.push(e.message);
+  }
+  console.log("stripe-webhook: telegram", JSON.stringify({ id: session.id, ...tg }));
+
+  return res.status(200).json({ received: true, emails: report, calendar: cal, telegram: tg });
 };
 
 // Disable Vercel's automatic body parser — we need the raw bytes for the HMAC.
