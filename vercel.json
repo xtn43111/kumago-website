@@ -2,6 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
   "trailingSlash": false,
+  "crons": [
+    {
+      "path": "/api/cron-telegram-deliveries",
+      "schedule": "0 0 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",
