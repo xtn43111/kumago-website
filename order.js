@@ -515,6 +515,7 @@
       elevator: $("#fElevator").dataset.value || "",
       name: $("#fName").value.trim(),
       contact: $("#fContact").value.trim(),
+      note: $("#fNote").value.trim(),
       mapUrl: resolvedMapUrl(),
       mapConfirm: state.mapConfirm || "",
       mapCorrected: state.mapConfirm === "incorrect" && !!customMapUrl(),
@@ -566,6 +567,7 @@
       `${T.t("電梯", "EV")}：${d.elevator}`,
       `${T.t("姓名", "お名前")}：${d.name}`,
       `${T.t("聯絡", "連絡先")}：${d.contact}`,
+      d.note ? `${T.t("備註", "備考")}：${d.note}` : "",
     ].filter(Boolean);
     return "https://line.me/R/oaMessage/" + LINE_OA_BASIC_ID + "/?" + encodeURIComponent(lines.join("\n"));
   }
@@ -589,6 +591,7 @@
       `${T.t("電梯", "EV")}：${d.elevator}`,
       `${T.t("姓名", "お名前")}：${d.name}`,
       `${T.t("聯絡", "連絡先")}：${d.contact}`,
+      d.note ? `${T.t("備註", "備考")}：${d.note}` : "",
       T.t("（已完成線上付款，麻煩協助確認配送日期與時段，謝謝！）",
           "（オンライン決済が完了しました。配送日時のご確認をお願いいたします。）"),
     ].filter(Boolean);

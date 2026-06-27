@@ -103,7 +103,7 @@ module.exports = async function handler(req, res) {
 
   const { plan, duration, addons = [], area, moveInDate, time,
           address, postal, building, mapUrl, shipPref, shipCity,
-          room, noRoom, elevator, name, contact, lang } = body;
+          room, noRoom, elevator, name, contact, note, lang } = body;
 
   // ---- validate core selection ----
   if (!PLAN_PRICES[plan] || !PLAN_PRICES[plan][duration]) {
@@ -179,6 +179,7 @@ module.exports = async function handler(req, res) {
     elevator,
     customer_name: name,
     customer_contact: contact,
+    note: note || "",
     lang: lang || "zh",
   };
   Object.entries(meta).forEach(([k, v]) => {
