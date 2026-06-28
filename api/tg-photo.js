@@ -43,7 +43,7 @@ module.exports = async function handler(req, res) {
       await new Promise((r) => setTimeout(r, 500));
     }
     if (!filePath) {
-      console.error("tg-photo getFile failed:", lastErr);
+      console.error("tg-photo getFile failed:", lastErr, "len", id.length);
       return res.status(404).json({ error: "file_not_found", detail: lastErr });
     }
 
