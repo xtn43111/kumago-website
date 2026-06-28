@@ -14,6 +14,10 @@
  *   node tools/manual_event.js --webhook-info      # show Telegram's current webhook
  *   node tools/manual_event.js --delete-webhook    # unregister (back to no webhook)
  *
+ *   node tools/manual_event.js --set-commands
+ *        Populate the bot's "/" menu (agenda/today/help). The Chinese /行程 and
+ *        /查 still work as typed text — Telegram menus only allow ASCII names.
+ *
  * Loads .env exactly like the other tools. Reads \n in CLI args as newlines.
  */
 
@@ -74,6 +78,24 @@ async function setWebhook() {
   console.log(`\nWebhook URL: ${url}\nSecret header: ${secret ? "ENABLED" : "(none — set TELEGRAM_WEBHOOK_SECRET)"}`);
 }
 
+async function setCommands() {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) throw new Error("TELEGRAM_BOT_TOKEN missing");
+  // ASCII-only names (Telegram restriction). The Chinese /行程 /查 are handled in
+  // the webhook as plain text and need no menu entry.
+  const commands = [
+    { command: "today", description: "今天的行程整理" },
+    { command: "agenda", description: "查某天行程（例：/agenda 7/5）" },
+    { command: "help", description: "使用說明 / 新增行程格式" },
+  ];
+  const r = await fetch(`https://api.telegram.org/bot${token}/setMyCommands`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ commands }),
+  });
+  console.log("setMyCommands →", JSON.stringify(await r.json(), null, 2));
+}
+
 async function webhookInfo() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const r = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`);
@@ -88,12 +110,13 @@ async function deleteWebhook() {
 
 (async () => {
   if (has("--set-webhook")) return setWebhook();
+  if (has("--set-commands")) return setCommands();
   if (has("--webhook-info")) return webhookInfo();
   if (has("--delete-webhook")) return deleteWebhook();
 
   const text = unesc(val("--parse") || val("--create"));
   if (!text) {
-    console.log("Usage: --parse <msg> | --create <msg> | --set-webhook | --webhook-info | --delete-webhook");
+    console.log("Usage: --parse <msg> | --create <msg> | --set-webhook | --set-commands | --webhook-info | --delete-webhook");
     console.log("\nMessage template:\n" + TEMPLATE);
     return;
   }
