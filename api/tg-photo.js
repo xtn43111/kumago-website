@@ -25,14 +25,27 @@ module.exports = async function handler(req, res) {
 
   try {
     // 1. Resolve file_id → file_path.
-    const metaRes = await fetch(
-      `https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(id)}`
-    );
-    const meta = await metaRes.json();
-    if (!meta.ok || !meta.result || !meta.result.file_path) {
-      return res.status(404).json({ error: "file_not_found" });
+    // Retry getFile: a freshly-uploaded photo can briefly 404 / be "temporarily
+    // unavailable" while Telegram finishes processing it. A couple of short
+    // retries makes the very first click after sending reliable.
+    let filePath = null;
+    let lastErr = "";
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const metaRes = await fetch(
+        `https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(id)}`
+      );
+      const meta = await metaRes.json();
+      if (meta.ok && meta.result && meta.result.file_path) {
+        filePath = meta.result.file_path;
+        break;
+      }
+      lastErr = (meta && meta.description) || `status ${metaRes.status}`;
+      await new Promise((r) => setTimeout(r, 500));
     }
-    const filePath = meta.result.file_path;
+    if (!filePath) {
+      console.error("tg-photo getFile failed:", lastErr);
+      return res.status(404).json({ error: "file_not_found", detail: lastErr });
+    }
 
     // 2. Download the bytes from Telegram's file CDN.
     const fileRes = await fetch(
@@ -41,12 +54,20 @@ module.exports = async function handler(req, res) {
     if (!fileRes.ok) return res.status(502).json({ error: "telegram_fetch_failed" });
 
     const buf = Buffer.from(await fileRes.arrayBuffer());
+
+    // Telegram's CDN often serves images as application/octet-stream, which makes
+    // browsers DOWNLOAD instead of DISPLAY. Derive a real image type from the file
+    // extension and only trust the response's type when it's already image/*.
     const ext = (filePath.split(".").pop() || "").toLowerCase();
-    const type =
-      fileRes.headers.get("content-type") ||
-      (ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg");
+    const EXT_TYPE = {
+      jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+      webp: "image/webp", gif: "image/gif", heic: "image/heic", heif: "image/heif",
+    };
+    const respType = fileRes.headers.get("content-type") || "";
+    const type = EXT_TYPE[ext] || (/^image\//.test(respType) ? respType : "image/jpeg");
 
     res.setHeader("Content-Type", type);
+    res.setHeader("Content-Disposition", "inline"); // show in-browser, don't download
     // Cache hard: the bytes behind a file_id never change.
     res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=604800, immutable");
     return res.status(200).end(buf);
