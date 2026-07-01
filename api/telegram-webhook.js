@@ -26,16 +26,24 @@
 
 const crypto = require("crypto");
 const { insertEvent, listEvents, jstToday } = require("../lib/gcal.js");
-const { sendTelegramTo, jstDayWindow, buildDigest } = require("../lib/telegram.js");
+const {
+  sendTelegramTo, jstDayWindow, buildDigest,
+  jstMonthWindow, parseMonth, buildMonthOverview, buildMonthDetail,
+} = require("../lib/telegram.js");
 const { buildManualEvent, parseDate, TEMPLATE } = require("../lib/tg_event.js");
 
-/* Shown in /start & /help: how to ask for a specific day's tidied agenda. */
+/* Shown in /start & /help: how to ask for a specific day's tidied agenda, and
+ * the two whole-month views. */
 const QUERY_HELP =
   "📅 查某天行程：\n" +
   "　/行程            → 今天\n" +
   "　/行程 7/5        → 今年 7 月 5 日\n" +
   "　/行程 2026-07-05 → 指定日期\n" +
-  "（也可用 查 / today）";
+  "（也可用 查 / today）\n\n" +
+  "🗓 查整月行程：\n" +
+  "　/本月            → 本月有行程的日期統整\n" +
+  "　/本月詳細        → 本月每天的完整行程\n" +
+  "　/本月 8　/本月詳細 2026-08 → 指定月份";
 
 /* Public base URL for building the photo proxy link. Prefer an explicit env so
  * the link is stable regardless of which Vercel host served the request. */
@@ -74,6 +82,22 @@ function parseQueryCommand(text) {
   const m = t.match(/^\/?(行程|查詢|查|agenda|today|schedule)\s*[：:]?\s*(.*)$/i);
   if (!m) return null;
   return { dateRaw: m[2].trim() };
+}
+
+/* Is this message a whole-month request? A SINGLE line starting with a month
+ * keyword (本月 / 這個月 / 月曆 …). The optional word after it picks the view
+ * (詳細 → full agenda, otherwise the compact overview); anything left over is
+ * the month argument ("8", "2026-08"). Returns { detail, monthRaw } or null.
+ * Single-line-only keeps it from colliding with a multi-line manual event. */
+function parseMonthCommand(text) {
+  const t = String(text || "").trim();
+  if (!t || /\n/.test(t)) return null;
+  const m = t.match(
+    /^\/?(本月|这个月|這個月|当月|當月|月曆|月历|月行程|month)\s*(詳細|详细|詳情|详情|detail|全部|all|總覽|总览|總結|总结|overview|列表|list)?\s*[：:]?\s*(.*)$/i
+  );
+  if (!m) return null;
+  const detail = /^(詳細|详细|詳情|详情|detail|全部|all)$/i.test(m[2] || "");
+  return { detail, monthRaw: m[3].trim() };
 }
 
 function fmtSuccess(view) {
@@ -131,6 +155,32 @@ module.exports = async function handler(req, res) {
   if (/^\/(start|help)\b/i.test(text.trim())) {
     await safeReply(chatId, "🐻 KUMAGO 行程小幫手\n\n" + QUERY_HELP + "\n\n" + TEMPLATE, true);
     return res.status(200).json({ ok: true, hint: "help" });
+  }
+
+  // Month query: "/本月" → overview of booked days, "/本月詳細" → full agenda
+  // for every day (no month = current JST month). Checked before the day query
+  // and the manual-event parser. Photo messages are always event creations.
+  const month = fileId ? null : parseMonthCommand(text);
+  if (month) {
+    const today = jstToday();
+    const monthStr = parseMonth(month.monthRaw, today);
+    if (month.monthRaw && !monthStr) {
+      await safeReply(chatId, `⚠️ 月份看不懂：「${month.monthRaw}」\n請用 /本月 8 或 /本月 2026-08`, true);
+      return res.status(200).json({ ok: true, month: "bad_month" });
+    }
+    try {
+      const w = jstMonthWindow(monthStr);
+      const events = await listEvents(w.timeMin, w.timeMax);
+      const messages = month.detail
+        ? buildMonthDetail(events, w)
+        : buildMonthOverview(events, w);
+      for (const m of messages) await safeReply(chatId, m, false);
+      return res.status(200).json({ ok: true, month: monthStr, detail: month.detail, count: events.length });
+    } catch (e) {
+      console.error("telegram-webhook month:", e);
+      await safeReply(chatId, `❌ 讀行事曆失敗：${e.message}`, true);
+      return res.status(200).json({ ok: true, month: monthStr, error: e.message });
+    }
   }
 
   // Date query: "/行程 7/5" → tidied agenda for that day (no date = today, JST).
