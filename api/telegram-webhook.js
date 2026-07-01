@@ -25,12 +25,12 @@
 "use strict";
 
 const crypto = require("crypto");
-const { insertEvent, listEvents, jstToday } = require("../lib/gcal.js");
+const { insertEvent, getEvent, patchEvent, listEvents, jstToday } = require("../lib/gcal.js");
 const {
   sendTelegramTo, jstDayWindow, buildDigest,
   jstMonthWindow, parseMonth, buildMonthOverview, buildMonthDetail,
 } = require("../lib/telegram.js");
-const { buildManualEvent, parseDate, TEMPLATE } = require("../lib/tg_event.js");
+const { buildManualEvent, parseDate, TEMPLATE, photoDescLine, PHOTO_LINE_RE } = require("../lib/tg_event.js");
 
 /* Shown in /start & /help: how to ask for a specific day's tidied agenda, and
  * the two whole-month views. */
@@ -69,6 +69,20 @@ function photoFileId(msg) {
 /* base32hex-safe (0-9a-f) deterministic id so webhook retries upsert one event. */
 function eventIdFor(chatId, messageId) {
   return crypto.createHash("sha1").update(`tg-${chatId}-${messageId}`).digest("hex");
+}
+
+/* One event id per photo ALBUM (media group), so every photo in the group
+ * upserts the SAME event and accumulates into one gallery link. */
+function albumEventIdFor(chatId, mediaGroupId) {
+  return crypto.createHash("sha1").update(`tg-${chatId}-mg-${mediaGroupId}`).digest("hex");
+}
+
+/* file_ids we've accumulated for an album, read back from the event. */
+function parseGalleryIds(csv) {
+  return String(csv || "").split(",").map((s) => s.trim()).filter(Boolean);
+}
+function galleryUrlFor(base, ids) {
+  return `${base}/api/tg-gallery?ids=${ids.map(encodeURIComponent).join(",")}`;
 }
 
 /* Is this message a "show me a day's tidied agenda" query rather than a new
@@ -146,6 +160,7 @@ module.exports = async function handler(req, res) {
 
   const text = msg.text || msg.caption || "";
   const fileId = photoFileId(msg);
+  const mgid = msg.media_group_id; // present when the owner sends a photo album
 
   // /start or empty → show the template, don't treat as an event.
   if (!text.trim() && !fileId) {
@@ -203,6 +218,70 @@ module.exports = async function handler(req, res) {
       console.error("telegram-webhook query:", e);
       await safeReply(chatId, `❌ 讀行事曆失敗：${e.message}`, true);
       return res.status(200).json({ ok: true, query: dateStr, error: e.message });
+    }
+  }
+
+  // Photo ALBUM (media group): Telegram sends each photo as its own update that
+  // shares media_group_id. Accumulate every photo's file_id into ONE gallery
+  // link on ONE event (keyed by the group). Only the captioned photo replies;
+  // the rest silently append. (Webhook is registered with max_connections=1 so
+  // these updates arrive in order, making the read-append race-free.)
+  if (mgid && fileId) {
+    const eid = albumEventIdFor(chatId, mgid);
+    const base = baseUrl(req);
+    let existing = null;
+    try { existing = await getEvent(eid); } catch (e) { console.error("album getEvent:", e.message); }
+    const prevIds = parseGalleryIds(
+      existing && existing.extendedProperties && existing.extendedProperties.private &&
+      existing.extendedProperties.private.galleryIds
+    );
+    const ids = prevIds.includes(fileId) ? prevIds : [...prevIds, fileId];
+    const gUrl = galleryUrlFor(base, ids);
+    const extendedProperties = { private: { galleryIds: ids.join(",") } };
+
+    if (text.trim()) {
+      // The captioned photo defines the event (summary/date/…). Create it (or
+      // patch, if a continuation photo somehow arrived first), then reply.
+      const parsed = buildManualEvent(text, { photoUrl: gUrl, todayJst: jstToday() });
+      if (!parsed.ok) {
+        const reason = parsed.missing && parsed.missing.length
+          ? `還缺：${parsed.missing.join("、")}` : (parsed.errors || []).join("\n");
+        await safeReply(chatId, `⚠️ ${reason}\n\n${TEMPLATE}`, true);
+        return res.status(200).json({ ok: true, album: "incomplete" });
+      }
+      parsed.event.extendedProperties = extendedProperties;
+      try {
+        const result = existing
+          ? await patchEvent(eid, parsed.event)
+          : await insertEvent(parsed.event, eid);
+        let reply = fmtSuccess({ ...parsed.view, photoUrl: gUrl });
+        if (result.htmlLink) reply += `\n\n🔗 ${result.htmlLink}`;
+        reply += `\n🖼 已建立相簿連結（其餘照片自動併入同一連結）`;
+        await safeReply(chatId, reply, false);
+        return res.status(200).json({ ok: true, album: "created", count: ids.length });
+      } catch (e) {
+        console.error("telegram-webhook album create:", e);
+        await safeReply(chatId, `❌ 加到行事曆失敗：${e.message}`, true);
+        return res.status(200).json({ ok: true, album: "error", error: e.message });
+      }
+    }
+
+    // Continuation photo (no caption): append its id to the album event. Reply
+    // nothing so an N-photo album produces exactly one confirmation.
+    if (!existing) {
+      console.warn("album photo before its caption — dropped one file_id");
+      return res.status(200).json({ ok: true, album: "waiting" });
+    }
+    const line = photoDescLine(gUrl);
+    const desc = PHOTO_LINE_RE.test(existing.description || "")
+      ? existing.description.replace(PHOTO_LINE_RE, line)
+      : `${existing.description || ""}\n${line}`;
+    try {
+      await patchEvent(eid, { description: desc, extendedProperties });
+      return res.status(200).json({ ok: true, album: "appended", count: ids.length });
+    } catch (e) {
+      console.error("telegram-webhook album append:", e);
+      return res.status(200).json({ ok: true, album: "append_error", error: e.message });
     }
   }
 

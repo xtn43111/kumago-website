@@ -66,6 +66,9 @@ async function setWebhook() {
     url,
     allowed_updates: JSON.stringify(["message", "edited_message"]),
     drop_pending_updates: "true",
+    // Serialize delivery: photo-album updates then arrive in order, so the
+    // gallery read-append in the webhook is race-free (single-owner, low volume).
+    max_connections: "1",
   };
   if (secret) params.secret_token = secret;
   const r = await fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
