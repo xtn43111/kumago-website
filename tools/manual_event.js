@@ -111,7 +111,84 @@ async function deleteWebhook() {
   console.log(JSON.stringify(await r.json(), null, 2));
 }
 
+/* Fetch a candidate chat/channel id from whatever updates Telegram has QUEUED.
+ * Requires the webhook to be OFF first (run --delete-webhook), so the owner can
+ * post/forward at leisure and the updates wait in the queue. Prints all chats
+ * seen and does NOT touch the webhook (run --set-webhook afterwards). */
+async function peekUpdates() {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) throw new Error("TELEGRAM_BOT_TOKEN missing");
+  const allowed = JSON.stringify(["message", "channel_post", "edited_channel_post", "my_chat_member"]);
+  const r = await fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=-100&allowed_updates=${encodeURIComponent(allowed)}`);
+  const j = await r.json();
+  if (!j.ok) { console.log("getUpdates error:", JSON.stringify(j)); return; }
+  console.log(`${(j.result || []).length} update(s) queued.`);
+  const seen = new Map();
+  for (const u of j.result || []) {
+    const m = u.message || u.edited_message;
+    const cand = [
+      u.channel_post && u.channel_post.chat,
+      u.edited_channel_post && u.edited_channel_post.chat,
+      m && m.chat, m && m.forward_from_chat, m && m.forward_origin && m.forward_origin.chat,
+      u.my_chat_member && u.my_chat_member.chat,
+    ].filter(Boolean);
+    console.log(`  · update ${u.update_id}: ${Object.keys(u).filter((k) => k !== "update_id").join(",")}`);
+    for (const c of cand) if (!seen.has(c.id)) { seen.set(c.id, c); console.log(`    FOUND id=${c.id} type=${c.type} ${c.title || c.username || ""}`); }
+  }
+  const channels = [...seen.values()].filter((c) => c.type === "channel");
+  console.log("\nChannels:", channels.length ? channels.map((c) => `${c.id} (${c.title})`).join(", ") : "none");
+  console.log("All chats:", [...seen.values()].map((c) => `${c.id}:${c.type}`).join(", ") || "none");
+}
+
+/* Discover a chat/channel id. getUpdates can't run while a webhook is set, so we
+ * temporarily remove it, poll for ~90s (post/forward a message in the channel
+ * during this window), print every chat we see, then restore the webhook. */
+async function findChat() {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) throw new Error("TELEGRAM_BOT_TOKEN missing");
+  await fetch(`https://api.telegram.org/bot${token}/deleteWebhook`);
+  console.log("Webhook removed. In the next ~90s: post any message in the channel");
+  console.log("(bot must be an admin), OR forward a channel message to the bot. Listening…\n");
+  const seen = new Map();
+  const deadline = Date.now() + 150000;
+  let offset = 0;
+  const allowed = JSON.stringify(["message", "channel_post", "edited_channel_post", "my_chat_member"]);
+  while (Date.now() < deadline) {
+    const url = `https://api.telegram.org/bot${token}/getUpdates?timeout=10&offset=${offset}&allowed_updates=${encodeURIComponent(allowed)}`;
+    let j;
+    try { j = await (await fetch(url)).json(); } catch (e) { continue; }
+    for (const u of j.result || []) {
+      offset = u.update_id + 1;
+      const m = u.message || u.edited_message;
+      const cand = [
+        u.channel_post && u.channel_post.chat,
+        u.edited_channel_post && u.edited_channel_post.chat,
+        m && m.chat,
+        m && m.forward_from_chat,                       // older API
+        m && m.forward_origin && m.forward_origin.chat, // newer API
+        u.my_chat_member && u.my_chat_member.chat,
+        u.my_chat_member && u.my_chat_member.from,
+      ].filter(Boolean);
+      console.log(`  · update ${u.update_id}: ${Object.keys(u).filter((k) => k !== "update_id").join(",")}`);
+      for (const c of cand) {
+        if (!seen.has(c.id)) {
+          seen.set(c.id, c);
+          console.log(`FOUND  id=${c.id}  type=${c.type}  ${c.title || c.username || ""}`);
+        }
+      }
+    }
+  }
+  console.log("\nRestoring webhook…");
+  await setWebhook();
+  const channels = [...seen.values()].filter((c) => c.type === "channel");
+  console.log("\nChannels seen:", channels.length
+    ? channels.map((c) => `${c.id} (${c.title})`).join(", ")
+    : "none — make sure the bot is an admin and you posted AFTER this started.");
+}
+
 (async () => {
+  if (has("--find-chat")) return findChat();
+  if (has("--peek")) return peekUpdates();
   if (has("--set-webhook")) return setWebhook();
   if (has("--set-commands")) return setCommands();
   if (has("--webhook-info")) return webhookInfo();

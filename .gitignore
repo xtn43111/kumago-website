@@ -10,6 +10,10 @@ token.json
 # Claude Code local settings
 .claude/settings.local.json
 
+# owner's monthly-note PDFs — local processing source, contain customer PII
+# (names, addresses, phones, emails). NEVER commit to GitHub.
+*.pdf
+
 # temp / intermediate processing
 .tmp/
 .DS_Store
