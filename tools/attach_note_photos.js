@@ -13,9 +13,12 @@
  * Usage:
  *   node tools/attach_note_photos.js <mapping.json>            # dry-run (no upload/patch)
  *   node tools/attach_note_photos.js <mapping.json> --apply    # upload + patch
+ *   node tools/attach_note_photos.js <mapping.json> --apply --replace  # overwrite existing gallery
  *
  * Idempotent: an event that already carries extendedProperties.private.galleryIds
- * is skipped. Original descriptions are backed up next to the mapping as
+ * is skipped — unless --replace, which re-uploads and overwrites the gallery
+ * link (used to redo the 2025-06→10 backfill whose PDF sources were 192px
+ * thumbnails). Original descriptions are backed up next to the mapping as
  * <mapping>.backup.json before any patch, so every change is reversible.
  */
 "use strict";
@@ -71,6 +74,7 @@ function galleryUrl(ids) {
 (async () => {
   const mapPath = process.argv[2];
   const apply = process.argv.includes("--apply");
+  const replace = process.argv.includes("--replace");
   if (!mapPath) throw new Error("usage: attach_note_photos.js <mapping.json> [--apply]");
   if (apply && (!TOKEN || !CHANNEL || !BASE)) {
     throw new Error("missing TELEGRAM_BOT_TOKEN / TELEGRAM_STORAGE_CHANNEL_ID / PUBLIC_BASE_URL");
@@ -80,30 +84,45 @@ function galleryUrl(ids) {
   const backup = fs.existsSync(backupPath) ? JSON.parse(fs.readFileSync(backupPath, "utf8")) : {};
 
   for (const row of rows) {
-    const n = (row.images || []).length;
-    console.log(`\n▶ ${row.label}  [${row.eventId}]  ${n} 張`);
-    for (const im of row.images) {
-      if (!fs.existsSync(im)) throw new Error(`missing image: ${im}`);
-      console.log(`    · ${path.basename(im)}`);
+    // Each image slot is either a local path (string → upload as hi-res) or
+    // { keepId } (pass an existing Telegram file_id straight through, so an
+    // unmatched photo keeps its original rather than being clobbered).
+    const slots = (row.images || []).map((x) => (typeof x === "string" ? { path: x } : x));
+    const nUp = slots.filter((s) => s.path).length;
+    const nKeep = slots.filter((s) => s.keepId).length;
+    console.log(`\n▶ ${row.label}  [${row.eventId}]  ${slots.length} 張（升級 ${nUp}／保留 ${nKeep}）`);
+    for (const s of slots) {
+      if (s.path) {
+        if (!fs.existsSync(s.path)) throw new Error(`missing image: ${s.path}`);
+        console.log(`    ↑ ${path.basename(s.path)}`);
+      } else if (s.keepId) {
+        console.log(`    · 保留原圖 ${s.keepId.slice(0, 16)}…`);
+      } else {
+        throw new Error(`bad image slot in ${row.eventId}: ${JSON.stringify(s)}`);
+      }
     }
     if (!apply) { console.log("    (dry-run — 不上傳、不修改)"); continue; }
 
     const ev = await getEvent(row.eventId);
-    if (ev.extendedProperties && ev.extendedProperties.private && ev.extendedProperties.private.galleryIds) {
-      console.log("    ↷ 已有相簿，跳過（idempotent）");
+    const hasGallery = ev.extendedProperties && ev.extendedProperties.private && ev.extendedProperties.private.galleryIds;
+    if (hasGallery && !replace) {
+      console.log("    ↷ 已有相簿，跳過（idempotent；要覆蓋請加 --replace）");
       continue;
     }
+    if (hasGallery) console.log("    ⟳ 已有相簿 → --replace 覆蓋");
     if (!(row.eventId in backup)) {
       backup[row.eventId] = { summary: ev.summary || "", description: ev.description || "" };
       fs.writeFileSync(backupPath, JSON.stringify(backup, null, 2));
     }
 
     const ids = [];
-    for (let i = 0; i < row.images.length; i++) {
-      const fid = await sendPhoto(fs.readFileSync(row.images[i]), `${row.label} #${i + 1}`);
-      if (!fid) throw new Error(`no file_id for ${row.images[i]}`);
+    for (let i = 0; i < slots.length; i++) {
+      const s = slots[i];
+      if (s.keepId) { ids.push(s.keepId); continue; }
+      const fid = await sendPhoto(fs.readFileSync(s.path), `${row.label} #${i + 1}`);
+      if (!fid) throw new Error(`no file_id for ${s.path}`);
       ids.push(fid);
-      console.log(`    ↑ ${path.basename(row.images[i])} → ${fid.slice(0, 20)}…`);
+      console.log(`    ↑ ${path.basename(s.path)} → ${fid.slice(0, 20)}…`);
       await sleep(1200); // stay under Telegram rate limits
     }
     const url = galleryUrl(ids);

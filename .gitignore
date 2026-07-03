@@ -19,3 +19,6 @@ token.json
 .DS_Store
 .vercel
 .env*
+
+# local deliverables with customer PII — keep off GitHub
+*.csv
