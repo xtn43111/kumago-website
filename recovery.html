@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-ja="満了レンタルの回収予約 — KUMAGO">期滿回收預約 — KUMAGO 家具家電租賃</title>
+  <meta name="description" content="KUMAGO 年租期滿回收預約。填寫希望回收日期與時段，我們會與您聯繫安排上門回收。" />
+  <meta name="robots" content="noindex" />
+
+  <link rel="icon" type="image/png" href="assets/kumago-logo-mark.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Sans+TC:wght@400;500;700;900&family=Nunito:wght@400;600;700&family=Quicksand:wght@600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="order.css" />
+  <link rel="stylesheet" href="recovery.css" />
+</head>
+<body>
+
+  <!-- ============ HEADER ============ -->
+  <header class="site-header" id="top">
+    <div class="container header-inner">
+      <a href="index.html" class="brand" aria-label="KUMAGO 家具家電租賃 首頁">
+        <img src="assets/kumago-logo-mark.png" alt="KUMAGO" class="brand-mark" />
+        <span class="brand-text">
+          <span class="brand-name">KUMAGO</span>
+          <span class="brand-sub" data-ja="家具家電レンタル">家具家電租賃</span>
+        </span>
+      </a>
+
+      <nav class="nav" id="nav" aria-label="主要導覽">
+        <a href="index.html#categories" data-ja="レンタル品目">租賃品項</a>
+        <a href="index.html#plans" data-ja="レンタルプラン">租賃方案</a>
+        <a href="index.html#how" data-ja="ご利用の流れ">服務流程</a>
+        <a href="index.html#contact" class="btn btn-primary btn-sm nav-cta" data-ja="LINEで相談">LINE 諮詢</a>
+        <button class="lang-toggle" id="langToggle" type="button" aria-label="切換語言 / 言語切替">
+          <span class="lang-opt is-active" data-lang="zh">中</span>
+          <span class="lang-opt" data-lang="ja">日</span>
+        </button>
+      </nav>
+
+      <button class="nav-toggle" id="navToggle" aria-label="開啟選單" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="order-main">
+    <div class="container recovery-container">
+      <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg>
+        <span data-ja="トップに戻る">回首頁</span>
+      </a>
+
+      <div class="order-head">
+        <p class="eyebrow">Pickup Booking</p>
+        <h1 data-ja="満了レンタルの回収予約">期滿回收預約</h1>
+        <p data-ja="レンタル期間が満了する方は、こちらから回収のご希望日時をご記入ください。担当者が確認のうえ、上門回収の日程をご連絡いたします。">
+          年租期滿的客人，請在這裡填寫希望的回收日期與時段。我們確認後會與您聯繫，安排上門回收。
+        </p>
+      </div>
+
+      <!-- ============ FORM ============ -->
+      <form class="recovery-form" id="recoveryForm" onsubmit="return false;">
+
+        <!-- 照片提醒 banner（僅提醒，不在表單上傳） -->
+        <div class="photo-remind" role="note">
+          <div class="photo-remind-icon" aria-hidden="true">📷</div>
+          <div class="photo-remind-text">
+            <strong data-ja="物品の現況写真をお忘れなく">別忘了物品現況照片</strong>
+            <span data-ja="回収予定の家具・家電の「現在の状態」がわかる写真を、LINEのトークで直接お送りください（この画面では送信できません）。">
+              請把要回收的家具、家電「目前狀態」的照片，直接在 LINE 對話中傳給我們（此頁面無法上傳照片）。
+            </span>
+          </div>
+        </div>
+
+        <section class="step-block">
+          <h2 class="step-title"><span class="step-num">1</span><span data-ja="ご希望の回収日時">希望回收日期與時段</span></h2>
+          <div class="form-row two">
+            <div class="field">
+              <label for="fDate" data-ja="ご希望の回収日">希望回收日期</label>
+              <input id="fDate" type="date" required />
+            </div>
+            <div class="field">
+              <label for="fSlot" data-ja="ご希望の時間帯">希望時段</label>
+              <select id="fSlot">
+                <option value="" disabled selected>—</option>
+                <option value="09-1130" data-ja="午前 09:00〜11:30">上午 09:00–11:30</option>
+                <option value="1230-16" data-ja="午後 12:30〜16:00">下午 12:30–16:00</option>
+                <option value="any" data-ja="終日OK">整天皆可</option>
+              </select>
+            </div>
+          </div>
+          <p class="field-hint" data-ja="実際の回収日時は、担当者が確認後に改めてLINEで調整させていただきます。">實際回收時間，我們確認後會再透過 LINE 與您確認調整。</p>
+        </section>
+
+        <section class="step-block">
+          <h2 class="step-title"><span class="step-num">2</span><span data-ja="ご連絡先・回収先">聯絡與回收資訊</span></h2>
+          <div class="form-row two">
+            <div class="field">
+              <label for="fName" data-ja="お名前">姓名</label>
+              <input id="fName" type="text" placeholder="您的姓名" data-ja-ph="お名前" autocomplete="name" />
+            </div>
+            <div class="field">
+              <label for="fPhone" data-ja="電話番号">電話</label>
+              <input id="fPhone" type="tel" placeholder="090-1234-5678" data-ja-ph="090-1234-5678" autocomplete="tel" inputmode="tel" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="fAddress" data-ja="物品の保管先住所">物品存放地址</label>
+            <input id="fAddress" type="text" placeholder="例：大阪市北区〇〇 1-2-3 〇〇マンション 305" data-ja-ph="例：大阪市北区〇〇 1-2-3 〇〇マンション 305" autocomplete="street-address" />
+            <p class="field-hint" data-ja="家具・家電が現在置かれている住所（回収にお伺いする場所）をご記入ください。">請填寫家具家電目前放置的地址（我們上門回收的地點）。</p>
+          </div>
+        </section>
+
+        <section class="step-block">
+          <h2 class="step-title">
+            <span class="step-num">3</span>
+            <span data-ja="備考・ご要望">備註・特殊需求</span>
+            <span class="step-sub" data-ja="（任意）">（選填）</span>
+          </h2>
+          <div class="field">
+            <label for="fNote" data-ja="ご要望があればご記入ください">如有特定需求請在此填寫</label>
+            <textarea id="fNote" rows="4" maxlength="500"
+              placeholder="例：只回收冰箱與洗衣機、其餘留用；或希望的其他日期…"
+              data-ja-ph="例：冷蔵庫と洗濯機のみ回収希望、他は継続利用…"></textarea>
+            <p class="field-hint" data-ja="回収に関するご要望など、お気軽にどうぞ（最大500字）">回收相關的需求都歡迎告訴我們（最多 500 字）</p>
+          </div>
+        </section>
+
+        <button type="button" class="btn-pay" id="submitBtn" data-ja="回収予約を送信する">送出回收預約</button>
+        <div class="form-error" id="formError" hidden></div>
+
+        <p class="pay-policy" data-ja="送信後、担当者が確認しLINEにて回収日程をご連絡いたします。お急ぎの場合はLINEのトークからお問い合わせください。">
+          送出後我們會確認並透過 LINE 與您聯繫回收日程。如較急，也可直接在 LINE 對話中詢問我們 🐻
+        </p>
+      </form>
+
+      <!-- ============ SUCCESS PANEL ============ -->
+      <div class="recovery-done" id="recoveryDone" hidden>
+        <div class="done-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h2 data-ja="回収予約を受け付けました">已收到您的回收預約</h2>
+        <p data-ja="担当者が確認のうえ、LINEにて回収日程をご連絡いたします。物品の現況写真は、LINEのトークからお送りいただけますようお願いいたします。">
+          我們已收到，會確認後透過 LINE 與您聯繫回收日程。也請記得把物品現況照片，在 LINE 對話中傳給我們。
+        </p>
+        <a class="btn-line-add" href="https://line.me/R/oaMessage/@967bmevi/?%E6%88%91%E5%89%9B%E9%80%81%E5%87%BA%E4%BA%86%E5%9B%9E%E6%94%B6%E9%A0%90%E7%B4%84%EF%BC%8C%E9%80%99%E6%98%AF%E7%89%A9%E5%93%81%E7%8F%BE%E6%B3%81%E7%85%A7%E7%89%87" target="_blank" rel="noopener">
+          <span data-ja="LINEで現況写真を送る">在 LINE 傳送現況照片</span>
+        </a>
+        <a href="index.html" class="done-home" data-ja="トップに戻る">回首頁</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-bottom" style="border-top:none;">
+      <p>© 2026 KUMAGO 家具家電租賃. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="recovery-form.js"></script>
+</body>
+</html>

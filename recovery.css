@@ -1,0 +1,76 @@
+/* KUMAGO — 期滿回收預約頁專屬樣式（配合 styles.css + order.css 使用）。 */
+
+/* 單欄、置中、比訂單頁窄 —— 表單短，不需要兩欄。 */
+.recovery-container { max-width: 640px; }
+
+.recovery-form {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 22px 22px 26px;
+}
+.recovery-form .step-block { margin-bottom: 26px; }
+
+/* 照片提醒 banner */
+.photo-remind {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: linear-gradient(180deg, #f6fbee, #eef7df);
+  border: 1px solid #cfe59c;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 24px;
+}
+.photo-remind-icon { font-size: 1.5rem; line-height: 1.4; flex: none; }
+.photo-remind-text { display: flex; flex-direction: column; gap: 4px; }
+.photo-remind-text strong { color: var(--green-deep); font-size: .98rem; }
+.photo-remind-text span { color: var(--ink-soft); font-size: .86rem; line-height: 1.65; }
+
+/* 送出成功畫面 */
+.recovery-done {
+  text-align: center;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 40px 26px 34px;
+}
+.done-badge {
+  width: 68px; height: 68px;
+  margin: 0 auto 18px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--green);
+  color: var(--white);
+  box-shadow: 0 12px 26px rgba(140,198,63,.35);
+}
+.recovery-done h2 { font-size: 1.35rem; color: var(--charcoal); margin: 0 0 10px; }
+.recovery-done p { color: var(--ink-soft); max-width: 460px; margin: 0 auto 24px; line-height: 1.75; }
+
+.btn-line-add {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px;
+  background: #06c755; color: #fff;
+  font-weight: 700;
+  padding: 13px 26px;
+  border-radius: var(--pill, 999px);
+  box-shadow: 0 12px 26px rgba(6,199,85,.3);
+  transition: transform .15s var(--ease, ease), background .15s;
+}
+.btn-line-add:hover { transform: translateY(-2px); background: #05b64c; }
+
+.done-home {
+  display: block;
+  margin-top: 16px;
+  color: var(--brown);
+  font-size: .9rem;
+  font-weight: 600;
+}
+.done-home:hover { color: var(--green-deep); }
+
+@media (max-width: 480px) {
+  .recovery-form { padding: 18px 15px 22px; }
+  .photo-remind { padding: 14px 15px; gap: 11px; }
+}
