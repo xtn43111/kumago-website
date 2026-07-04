@@ -6,6 +6,10 @@
     {
       "path": "/api/cron-telegram-deliveries",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron-weekly-recovery",
+      "schedule": "0 0 * * 1"
     }
   ],
   "headers": [
