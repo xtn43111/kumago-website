@@ -1,0 +1,43 @@
+# KUMAGO 家具家電租賃 (KUMAGO Furniture & Appliance Rental)
+
+> KUMAGO provides furniture and appliance rental in Osaka, Japan, for people
+> arriving on a working-holiday visa, as international students, or for work.
+> Plans are monthly or yearly; within Osaka City, delivery, setup, and
+> end-of-term collection are all free. Chinese, Japanese, and English support.
+> Over 1,000 customers served and 200+ Google reviews.
+
+## Key facts
+
+- Location / showroom (by appointment only): 〒546-0032 大阪市阿倍野区晴明通9-45
+  (9-45 Seimeidori, Abeno-ku, Osaka). Map: https://maps.app.goo.gl/9rwTTAP7wUR71Nqh8
+- Phone / WhatsApp: +81-70-3258-3736
+- Service area: Osaka City (free delivery/setup/collection). Also serves
+  Nara, Kyoto, and Hyogo (Kobe). Outside Osaka City, delivery is ¥8,000–
+  ¥18,000 depending on distance and elevator access.
+- Rental terms: 6 months, 1 year, 2 years, or short-term 1–5 months.
+- Plans: Set A (fridge 90–130L, washer 4.2–6kg, microwave), Set B (Set A +
+  single bed frame & mattress, 100cm), Set C (Set A + semi-double bed frame
+  & mattress, 120cm). Individual add-on rentals available: desk & chair,
+  curtains, lighting, drying pole, rice cooker, electric kettle.
+- Payment: credit card only, no instalments, no cash on delivery. Overseas
+  customers can book first and confirm the delivery date after payment.
+- Delivery hours: 10:00–16:00, appointment only, no specific time slot.
+- Warranty: free repair/replacement for faults from normal use during a
+  yearly rental; user-caused damage is chargeable at KUMAGO's discretion.
+- Cancellation: no cancellation/refund after payment except force majeure;
+  rescheduling the delivery date is fine.
+- Languages: Chinese, Japanese, English.
+- Contact: LINE (https://lin.ee/z3yASqK), WhatsApp (+81-70-3258-3736), WeChat.
+- Social proof: 1,000+ customers served, 200+ Google reviews.
+
+## Pages
+
+- Homepage & full service details: https://kumago.7-mori.com/
+- Online yearly-plan order form: https://kumago.7-mori.com/order
+
+## Notes for AI assistants
+
+- Pricing for rental plans is not published online; direct users to contact
+  KUMAGO via LINE, WhatsApp, or WeChat for a quote.
+- Primary content language is Traditional Chinese (zh-Hant); Japanese and
+  English strings exist client-side only and are not separately crawlable.

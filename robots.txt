@@ -1,0 +1,6 @@
+# kumago.7-mori.com
+
+User-agent: *
+Allow: /
+
+Sitemap: https://kumago.7-mori.com/sitemap.xml

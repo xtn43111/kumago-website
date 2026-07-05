@@ -35,6 +35,16 @@
   const applyLang = (lang) => {
     if (lang === currentLang || !HTML_LANG[lang]) return;
 
+    /* JP glyphs are only needed after switching to 日 — load the font on demand
+       instead of shipping ~500 unused @font-face rules to every zh/en visitor. */
+    if (lang === "ja" && !document.getElementById("jaFontLink")) {
+      const l = document.createElement("link");
+      l.id = "jaFontLink";
+      l.rel = "stylesheet";
+      l.href = "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap";
+      document.head.appendChild(l);
+    }
+
     document.querySelectorAll("[data-ja], [data-en]").forEach((el) => {
       if (el.dataset.zhCache === undefined) el.dataset.zhCache = el.textContent;
       const next = lang === "zh" ? el.dataset.zhCache : el.dataset[lang];
