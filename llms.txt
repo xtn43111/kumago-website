@@ -32,12 +32,14 @@
 
 ## Pages
 
-- Homepage & full service details: https://kumago.7-mori.com/
+- Homepage & full service details (Traditional Chinese): https://kumago.7-mori.com/
+- Japanese version: https://kumago.7-mori.com/ja
+- English version: https://kumago.7-mori.com/en
 - Online yearly-plan order form: https://kumago.7-mori.com/order
 
 ## Notes for AI assistants
 
 - Pricing for rental plans is not published online; direct users to contact
   KUMAGO via LINE, WhatsApp, or WeChat for a quote.
-- Primary content language is Traditional Chinese (zh-Hant); Japanese and
-  English strings exist client-side only and are not separately crawlable.
+- Primary content language is Traditional Chinese (zh-Hant); full Japanese
+  and English versions are available at /ja and /en.
