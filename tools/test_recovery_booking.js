@@ -39,16 +39,63 @@ async function run(method, body) {
   const ok = (name, fn) => { n++; try { fn(); pass++; console.log("  ✓", name); } catch (e) { console.error("  ✗", name, "\n     ", e.message); } };
 
   // --- pure: normalizeInput ---
-  ok("normalizeInput 缺欄位回 missing", () => {
-    const r = normalizeInput({ name: "", phone: "", address: "", date: "bad", slot: "x" });
+  ok("normalizeInput 全空 → missing 列全部五欄", () => {
+    const r = normalizeInput({ name: "", phone: "", address: "", date: "", slot: "" });
     assert.strictEqual(r.ok, false);
     assert.deepStrictEqual(r.missing.sort(), ["address", "date", "name", "phone", "slot"]);
   });
+  ok("填了但格式錯 → 歸 invalid（非 missing）", () => {
+    const r = normalizeInput({ name: "A", phone: "09012345678", address: "大阪", date: "bad", slot: "x" }, Date.parse("2026-07-06T00:00:00Z"));
+    assert.strictEqual(r.ok, false);
+    assert.ok(!r.missing, "不該是 missing");
+    assert.deepStrictEqual(r.invalid.sort(), ["date", "slot"]);
+  });
   ok("normalizeInput 好資料通過並截斷備註", () => {
-    const r = normalizeInput({ name: " 王小明 ", phone: "090", address: "大阪", date: "2026-08-01", slot: "09-1130", note: "x".repeat(600) });
+    const r = normalizeInput({ name: " 王小明 ", phone: "090-1234-5678", address: "大阪", date: "2026-08-01", slot: "09-1130", note: "x".repeat(600) });
     assert.strictEqual(r.ok, true);
     assert.strictEqual(r.value.name, "王小明");
     assert.strictEqual(r.value.note.length, 500);
+  });
+
+  // --- C5 收緊：長度上限 / 電話格式 / 真實日期 / 日期窗 ---
+  const NOW = Date.parse("2026-07-06T00:00:00Z"); // 固定「今天」讓日期窗測試穩定
+  ok("超長姓名 → invalid（非 missing）", () => {
+    const r = normalizeInput({ name: "王".repeat(41), phone: "09012345678", address: "大阪", date: "2026-08-01", slot: "any" }, NOW);
+    assert.strictEqual(r.ok, false);
+    assert.ok(r.invalid && r.invalid.includes("name"));
+    assert.ok(!r.missing);
+  });
+  ok("超長地址 → invalid", () => {
+    const r = normalizeInput({ name: "A", phone: "09012345678", address: "大".repeat(121), date: "2026-08-01", slot: "any" }, NOW);
+    assert.ok(r.invalid && r.invalid.includes("address"));
+  });
+  ok("電話數字太少（3 碼）→ invalid", () => {
+    const r = normalizeInput({ name: "A", phone: "090", address: "大阪", date: "2026-08-01", slot: "any" }, NOW);
+    assert.ok(r.invalid && r.invalid.includes("phone"));
+  });
+  ok("合理電話（含符號）→ 通過", () => {
+    const r = normalizeInput({ name: "A", phone: "+81 90-1234-5678", address: "大阪", date: "2026-08-01", slot: "any" }, NOW);
+    assert.strictEqual(r.ok, true);
+  });
+  ok("非真實日曆日 2026-13-45 → invalid（不崩潰）", () => {
+    const r = normalizeInput({ name: "A", phone: "09012345678", address: "大阪", date: "2026-13-45", slot: "any" }, NOW);
+    assert.ok(r.invalid && r.invalid.includes("date"));
+  });
+  ok("2026-02-30 不存在 → invalid", () => {
+    const r = normalizeInput({ name: "A", phone: "09012345678", address: "大阪", date: "2026-02-30", slot: "any" }, NOW);
+    assert.ok(r.invalid && r.invalid.includes("date"));
+  });
+  ok("過去日期 → invalid", () => {
+    const r = normalizeInput({ name: "A", phone: "09012345678", address: "大阪", date: "2025-01-01", slot: "any" }, NOW);
+    assert.ok(r.invalid && r.invalid.includes("date"));
+  });
+  ok("太遠未來（+2 年）→ invalid", () => {
+    const r = normalizeInput({ name: "A", phone: "09012345678", address: "大阪", date: "2028-08-01", slot: "any" }, NOW);
+    assert.ok(r.invalid && r.invalid.includes("date"));
+  });
+  ok("窗內未來日 → 通過", () => {
+    const r = normalizeInput({ name: "A", phone: "09012345678", address: "大阪", date: "2026-08-01", slot: "any" }, NOW);
+    assert.strictEqual(r.ok, true);
   });
 
   // --- pure: buildRecoveryEvent ---
@@ -117,13 +164,13 @@ async function run(method, body) {
   // Telegram 掛掉不應害 200 變失敗
   tgImpl = async () => { throw new Error("tg down"); };
   await (async () => {
-    const res = await run("POST", { name: "客B", phone: "090", address: "大阪", date: "2026-09-01", slot: "any" });
+    const res = await run("POST", { name: "客B", phone: "090-2222-3333", address: "大阪", date: "2026-09-01", slot: "any" });
     n++; try { assert.strictEqual(res._status, 200); assert.strictEqual(res._json.telegram, false); pass++; console.log("  ✓ Telegram 失敗仍回 200（telegram:false）"); } catch (e) { console.error("  ✗ Telegram 失敗仍回 200", e.message); }
   })();
   // 行事曆掛掉 → 502
   insertImpl = async () => { throw new Error("cal down"); };
   await (async () => {
-    const res = await run("POST", { name: "客C", phone: "090", address: "大阪", date: "2026-09-01", slot: "any" });
+    const res = await run("POST", { name: "客C", phone: "090-3333-4444", address: "大阪", date: "2026-09-01", slot: "any" });
     n++; try { assert.strictEqual(res._status, 502); pass++; console.log("  ✓ 行事曆失敗 → 502"); } catch (e) { console.error("  ✗ 行事曆失敗 → 502", e.message); }
   })();
 
