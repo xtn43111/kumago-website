@@ -74,16 +74,18 @@ module.exports = async function handler(req, res) {
   let raw;
   try { raw = await readRawBody(req); } catch { return res.status(400).json({ error: "bad_body" }); }
 
-  // Verify signature when a secret is configured. Without one (local dev), accept
-  // unverified events but log loudly — never run unverified in production.
-  if (whSecret) {
-    const sig = req.headers["stripe-signature"];
-    if (!verifySignature(raw, sig, whSecret)) {
-      console.error("stripe-webhook: signature verification failed");
-      return res.status(400).json({ error: "invalid_signature" });
-    }
-  } else {
-    console.warn("stripe-webhook: STRIPE_WEBHOOK_SECRET unset — accepting UNVERIFIED event (dev only)");
+  // Fail-closed: no webhook secret = refuse everything. An empty env var must
+  // surface as a visible outage (Stripe retries + dashboard alerts), never as
+  // silently accepting forgeable events. (Vercel sensitive vars have a history
+  // of reading back empty — that's exactly the case this guards against.)
+  if (!whSecret) {
+    console.error("stripe-webhook: STRIPE_WEBHOOK_SECRET unset — rejecting event (fail-closed)");
+    return res.status(500).json({ error: "webhook_not_configured" });
+  }
+  const sig = req.headers["stripe-signature"];
+  if (!verifySignature(raw, sig, whSecret)) {
+    console.error("stripe-webhook: signature verification failed");
+    return res.status(400).json({ error: "invalid_signature" });
   }
 
   let event;

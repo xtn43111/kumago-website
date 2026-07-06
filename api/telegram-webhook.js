@@ -164,12 +164,16 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
-  // Reject anything that isn't Telegram (when a secret is configured).
+  // Fail-closed: this endpoint can create calendar events and dump a month of
+  // customer PII, so an unset/empty secret must mean "reject all", never
+  // "skip the check" (Vercel sensitive vars have read back empty before).
   const wantSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (wantSecret) {
-    const got = req.headers["x-telegram-bot-api-secret-token"];
-    if (got !== wantSecret) return res.status(401).json({ error: "unauthorized" });
+  if (!wantSecret) {
+    console.error("telegram-webhook: TELEGRAM_WEBHOOK_SECRET unset — rejecting (fail-closed)");
+    return res.status(500).json({ error: "webhook_not_configured" });
   }
+  const got = req.headers["x-telegram-bot-api-secret-token"];
+  if (got !== wantSecret) return res.status(401).json({ error: "unauthorized" });
 
   let body = req.body;
   if (typeof body === "string") {
@@ -181,9 +185,14 @@ module.exports = async function handler(req, res) {
   // Ack non-message updates fast so Telegram doesn't retry.
   if (!msg || !msg.chat) return res.status(200).json({ ok: true, ignored: "no_message" });
 
-  // Owner-only: silently ignore anyone else.
+  // Owner-only, fail-closed: if TELEGRAM_CHAT_ID is unset/empty, nobody is the
+  // owner — ignore everyone rather than treating everyone as the owner.
   const owner = process.env.TELEGRAM_CHAT_ID;
-  if (owner && String(msg.chat.id) !== String(owner)) {
+  if (!owner) {
+    console.error("telegram-webhook: TELEGRAM_CHAT_ID unset — ignoring all senders (fail-closed)");
+    return res.status(200).json({ ok: true, ignored: "owner_not_configured" });
+  }
+  if (String(msg.chat.id) !== String(owner)) {
     return res.status(200).json({ ok: true, ignored: "not_owner" });
   }
   const chatId = msg.chat.id;
