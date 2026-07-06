@@ -560,7 +560,17 @@
     if (d.mapConfirm === "incorrect" && !customMapUrl())
       miss.push(T.t("正確位置的 Google 地圖網址", "正しい位置の Googleマップ URL", "Google Maps URL for the correct location"));
     if (!d.name) miss.push(T.t("姓名", "お名前", "Name"));
-    if (!d.contact) miss.push(T.t("聯絡方式", "ご連絡先", "Contact info"));
+    if (!d.contact) {
+      miss.push(T.t("聯絡方式", "ご連絡先", "Contact info"));
+    } else {
+      // Accept a real email OR a phone with ≥8 digits — otherwise the shop can't
+      // actually reach the customer (and a bad email means no confirmation mail).
+      const isEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.contact);
+      const isPhone = (d.contact.replace(/\D/g, "").length >= 8);
+      if (!isEmail && !isPhone) {
+        miss.push(T.t("有效的 Email 或電話", "有効なメールまたは電話番号", "a valid email or phone number"));
+      }
+    }
     return miss;
   }
 
