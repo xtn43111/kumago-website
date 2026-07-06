@@ -17,12 +17,17 @@ const { listEvents } = require("../lib/gcal.js");
 const { jstTomorrowWindow, buildDigest, sendTelegram } = require("../lib/telegram.js");
 
 module.exports = async function handler(req, res) {
+  // Fail-closed: unset CRON_SECRET must stop the cron (a visible failure), never
+  // leave this Telegram-pushing endpoint open to anyone. Vercel Cron sends the
+  // Bearer automatically when the secret is configured.
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = req.headers["authorization"] || "";
-    if (auth !== `Bearer ${secret}`) {
-      return res.status(401).json({ ok: false, error: "unauthorized" });
-    }
+  if (!secret) {
+    console.error("cron-telegram-deliveries: CRON_SECRET unset — refusing (fail-closed)");
+    return res.status(500).json({ ok: false, error: "cron_not_configured" });
+  }
+  const auth = req.headers["authorization"] || "";
+  if (auth !== `Bearer ${secret}`) {
+    return res.status(401).json({ ok: false, error: "unauthorized" });
   }
 
   try {

@@ -36,12 +36,17 @@ function isSendWeek(todayISO) {
 }
 
 module.exports = async function handler(req, res) {
+  // Fail-closed: unset CRON_SECRET stops the cron (visible failure) rather than
+  // exposing this Telegram-pushing endpoint. Vercel Cron sends the Bearer when
+  // the secret is configured.
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = req.headers["authorization"] || "";
-    if (auth !== `Bearer ${secret}`) {
-      return res.status(401).json({ ok: false, error: "unauthorized" });
-    }
+  if (!secret) {
+    console.error("cron-weekly-recovery: CRON_SECRET unset — refusing (fail-closed)");
+    return res.status(500).json({ ok: false, error: "cron_not_configured" });
+  }
+  const auth = req.headers["authorization"] || "";
+  if (auth !== `Bearer ${secret}`) {
+    return res.status(401).json({ ok: false, error: "unauthorized" });
   }
   try {
     const today = jstToday();

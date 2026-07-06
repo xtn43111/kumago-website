@@ -28,21 +28,30 @@ function readRawBody(req) {
   });
 }
 
-/* Verify Stripe's "t=...,v1=..." signature header (no SDK needed). */
+/* Verify Stripe's "t=...,v1=...[,v1=...]" signature header (no SDK needed).
+ * A header can carry MULTIPLE v1 signatures — Stripe sends one per active
+ * signing secret during a secret rotation. Collect them all and accept if ANY
+ * matches ours, so a rotation doesn't start rejecting live payments. */
 function verifySignature(raw, header, secret, toleranceSec = 300) {
   if (!header) return false;
-  const parts = Object.fromEntries(
-    header.split(",").map((kv) => kv.split("=").map((s) => s.trim()))
-  );
-  const t = parts.t;
-  const v1 = parts.v1;
-  if (!t || !v1) return false;
+  let t = null;
+  const v1s = [];
+  header.split(",").forEach((kv) => {
+    const i = kv.indexOf("=");
+    if (i === -1) return;
+    const k = kv.slice(0, i).trim();
+    const val = kv.slice(i + 1).trim();
+    if (k === "t") t = val;
+    else if (k === "v1") v1s.push(val);
+  });
+  if (!t || !v1s.length) return false;
   const signed = `${t}.${raw.toString("utf8")}`;
-  const expected = crypto.createHmac("sha256", secret).update(signed).digest("hex");
-  let ok = false;
-  try {
-    ok = crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
-  } catch { ok = false; }
+  const expected = Buffer.from(
+    crypto.createHmac("sha256", secret).update(signed).digest("hex")
+  );
+  const ok = v1s.some((v1) => {
+    try { return crypto.timingSafeEqual(expected, Buffer.from(v1)); } catch { return false; }
+  });
   if (!ok) return false;
   // Reject events outside the tolerance window (replay protection).
   const now = Math.floor(Date.now() / 1000);
@@ -161,6 +170,11 @@ module.exports = async function handler(req, res) {
     if (!calOk) {
       const why = (cal.errors && cal.errors[0]) || "原因不明";
       pushText = `⚠️ 此單未能自動建立配送行事曆（${why}），請手動處理！\n\n` + pushText;
+    }
+    // M6: email failures are otherwise silent — flag them here so the owner can
+    // follow up (esp. the customer confirmation, which they wouldn't see fail).
+    if (report.errors && report.errors.length) {
+      pushText += `\n\n⚠️ 通知信寄送有問題：${report.errors.join("；")}`;
     }
     await sendTelegram(pushText);
     tg.sent = true;
