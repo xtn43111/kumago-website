@@ -16,7 +16,7 @@ const { sendTelegramTo } = require("../lib/telegram.js");
 const { buildRecoveryReport } = require("../lib/recovery.js");
 
 const LOOKAHEAD_DAYS = 45; // 到期前幾天開始列為「需安排」
-const PAST_WINDOW = 120; // 往回看幾天抓已過期未安排
+const PAST_WINDOW = 800; // 往回抓夠久，才看得到過去的配送年租單（推估到期用，涵蓋兩年方案）
 const FUTURE_WINDOW = 400; // 往前抓多少天的到期（涵蓋一年方案）
 const BIWEEKLY_ANCHOR = "2026-07-06"; // 起算週一，之後每 14 天推一次（07-06, 07-20, 08-03…）
 
