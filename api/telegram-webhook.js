@@ -167,10 +167,10 @@ async function findTargetEvent(dateStr, keyword) {
   return hits.length === 1 ? { event: hits[0] } : { candidates: hits };
 }
 
-function fmtSuccess(view) {
+function fmtSuccess(view, isUpdate) {
   const e = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const lines = [
-    "✅ 已加到行事曆",
+    isUpdate ? "✅ 已更新行事曆" : "✅ 已加到行事曆",
     "",
     `📌 ${e(view.summary)}`,
     `📅 ${e(view.date)}　🕒 ${e(view.time)}`,
@@ -423,11 +423,21 @@ module.exports = async function handler(req, res) {
 
   try {
     const eid = eventIdFor(chatId, msg.message_id);
-    const result = await insertEvent(parsed.event, eid);
-    let reply = fmtSuccess(parsed.view);
+    // Editing a Telegram message keeps the SAME message_id, so insertEvent hits
+    // 409 (already exists) and no-ops. When this update is an edit, push the new
+    // content through with patchEvent so the calendar actually reflects the edit
+    // instead of silently keeping the old values while replying "success" (H5).
+    const isEdit = !!body.edited_message;
+    let result = await insertEvent(parsed.event, eid);
+    let isUpdate = false;
+    if (result.duplicate && isEdit) {
+      result = await patchEvent(eid, parsed.event);
+      isUpdate = true;
+    }
+    let reply = fmtSuccess(parsed.view, isUpdate);
     if (result.htmlLink) reply += `\n\n🔗 ${result.htmlLink}`;
     await safeReply(chatId, reply, false);
-    return res.status(200).json({ ok: true, created: true, eventId: result.eventId });
+    return res.status(200).json({ ok: true, created: !isUpdate, updated: isUpdate, eventId: result.eventId });
   } catch (e) {
     console.error("telegram-webhook insert:", e);
     await safeReply(chatId, `❌ 加到行事曆失敗：${e.message}`, true);
