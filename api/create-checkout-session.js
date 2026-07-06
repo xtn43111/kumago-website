@@ -108,6 +108,21 @@ function durationLabel(d) {
   return d.replace("個月", " 個月");
 }
 
+// moveInDate 必須是真實日曆日且在合理配送窗內。前端的 <input min> 可被繞過，
+// 若讓畸形/過去日期進到付款，webhook 端 buildEvent 會回 null → 付款成功卻沒有
+// 配送行事曆事件 → 這單會被漏掉（H4）。故在建立 Stripe session 前就擋掉。
+function isRealDate(s) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(`${s}T00:00:00Z`);
+  return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
+function moveInDateOk(s, now) {
+  if (!isRealDate(s)) return false;
+  const todayJst = new Date((now || Date.now()) + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const off = Math.round((Date.parse(`${s}T00:00:00Z`) - Date.parse(`${todayJst}T00:00:00Z`)) / 86400000);
+  return off >= -1 && off <= 400; // 允許今天前後：昨天到約 13 個月內
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -152,6 +167,10 @@ module.exports = async function handler(req, res) {
   }
   if (!moveInDate || !time || !address || !elevator || !name || !contact) {
     return res.status(400).json({ error: "missing_required_fields" });
+  }
+  // Reject an unplaceable delivery date before capturing payment (H4).
+  if (!moveInDateOk(moveInDate)) {
+    return res.status(400).json({ error: "invalid_move_in_date" });
   }
   if (!noRoom && !room) {
     return res.status(400).json({ error: "missing_room" });

@@ -16,7 +16,7 @@
 
 const crypto = require("crypto");
 const { sendOrderEmails, orderView } = require("../lib/mailer.js");
-const { createOrderEvent } = require("../lib/gcal.js");
+const { createOrderEvent, orderEventId, getEvent, patchEvent } = require("../lib/gcal.js");
 const { buildOrderPush, sendTelegram } = require("../lib/telegram.js");
 
 function readRawBody(req) {
@@ -106,6 +106,43 @@ module.exports = async function handler(req, res) {
   const lineItems = secret ? await fetchLineItems(session.id, secret) : [];
   const amountTotal = session.amount_total != null ? session.amount_total : null;
 
+  // Idempotency (H3): Stripe delivers at-least-once and retries after this
+  // handler's slow inline work, so emails/Telegram could fire twice. The order's
+  // calendar event carries a kumago_notified flag; if it's already set, this is a
+  // redelivery of a fully-processed order → ack without re-notifying. (Calendar
+  // itself is already idempotent via the deterministic session-id event id.)
+  const eid = orderEventId(session.id);
+  let alreadyNotified = false;
+  if (eid) {
+    try {
+      const ev = await getEvent(eid);
+      alreadyNotified = !!(ev && ev.extendedProperties && ev.extendedProperties.private
+        && ev.extendedProperties.private.kumago_notified === "1");
+    } catch (e) {
+      console.error("stripe-webhook: notified-check failed:", e.message);
+    }
+  }
+  if (alreadyNotified) {
+    console.log("stripe-webhook: dedup — already notified", session.id);
+    return res.status(200).json({ received: true, deduped: true });
+  }
+
+  // Record the order onto the shop Google Calendar first (idempotent on session
+  // id). A failure here must never make Stripe retry endlessly — payment captured.
+  let cal = { created: false, skipped: false, errors: [] };
+  try {
+    cal = await createOrderEvent(meta, lineItems, amountTotal, session.id);
+  } catch (e) {
+    console.error("stripe-webhook: createOrderEvent threw:", e);
+    cal.errors.push(e.message);
+  }
+  if (cal.errors && cal.errors.length) console.error("stripe-webhook calendar errors:", cal.errors);
+  console.log("stripe-webhook: calendar", JSON.stringify({ id: session.id, ...cal }));
+  // H4: if the order could NOT be placed on the calendar (e.g. an unplaceable
+  // date that slipped past checkout), the owner must still be told, loudly — a
+  // paid order with no calendar event is exactly what gets missed.
+  const calOk = cal.created && !(cal.errors && cal.errors.length);
+
   let report = { owner: false, customer: false, skipped: false, errors: [] };
   try {
     report = await sendOrderEmails(meta, lineItems, amountTotal);
@@ -116,30 +153,33 @@ module.exports = async function handler(req, res) {
   if (report.errors && report.errors.length) console.error("stripe-webhook mail errors:", report.errors);
   console.log("stripe-webhook: emails", JSON.stringify({ id: session.id, ...report }));
 
-  // Record the order onto the shop Google Calendar (idempotent on session id, so
-  // Stripe retries upsert the same event). A failure here must never make Stripe
-  // retry endlessly — the payment is already captured.
-  let cal = { created: false, skipped: false, errors: [] };
-  try {
-    cal = await createOrderEvent(meta, lineItems, amountTotal, session.id);
-  } catch (e) {
-    console.error("stripe-webhook: createOrderEvent threw:", e);
-  }
-  if (cal.errors && cal.errors.length) console.error("stripe-webhook calendar errors:", cal.errors);
-  console.log("stripe-webhook: calendar", JSON.stringify({ id: session.id, ...cal }));
-
   // Instant per-order push to the owner's Telegram (separate from the daily
-  // digest). Same resilience contract as email/calendar: never throw, never make
-  // Stripe retry — the payment is already captured. No-ops if the bot is unset.
+  // digest). Same resilience contract: never throw, never make Stripe retry.
   let tg = { sent: false, errors: [] };
   try {
-    await sendTelegram(buildOrderPush(orderView(meta, lineItems, amountTotal)));
+    let pushText = buildOrderPush(orderView(meta, lineItems, amountTotal));
+    if (!calOk) {
+      const why = (cal.errors && cal.errors[0]) || "原因不明";
+      pushText = `⚠️ 此單未能自動建立配送行事曆（${why}），請手動處理！\n\n` + pushText;
+    }
+    await sendTelegram(pushText);
     tg.sent = true;
   } catch (e) {
     console.error("stripe-webhook: telegram push threw:", e);
     tg.errors.push(e.message);
   }
   console.log("stripe-webhook: telegram", JSON.stringify({ id: session.id, ...tg }));
+
+  // Mark the order notified so a later Stripe redelivery dedups (H3). Only
+  // possible when the event exists; a failed-to-place order (H4) stays unflagged
+  // and will re-alert on retry — acceptable, the owner needs to see it.
+  if (eid && cal.created) {
+    try {
+      await patchEvent(eid, { extendedProperties: { private: { kumago_notified: "1" } } });
+    } catch (e) {
+      console.error("stripe-webhook: set notified flag failed:", e.message);
+    }
+  }
 
   return res.status(200).json({ received: true, emails: report, calendar: cal, telegram: tg });
 };
