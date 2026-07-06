@@ -101,7 +101,11 @@
   function init() {
     const dateEl = $("#fDate");
     if (dateEl) dateEl.min = todayLocalISO();
-    $("#submitBtn").addEventListener("click", onSubmit);
+    // submit 事件統一接手：按鈕（type=submit）點擊與文字欄按 Enter 都走這裡。
+    $("#recoveryForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      onSubmit();
+    });
     // 初始載入即為中文預設，placeholder 無需套用；語言切換由 script.js 統一處理。
   }
 
