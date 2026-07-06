@@ -16,7 +16,7 @@
  */
 
 const crypto = require("crypto");
-const { insertEvent, isConfigured } = require("../lib/gcal.js");
+const { insertEvent, patchEvent, isConfigured } = require("../lib/gcal.js");
 const { sendTelegram } = require("../lib/telegram.js");
 
 const TIMEZONE = "Asia/Tokyo"; // 日本無夏令時
@@ -242,9 +242,16 @@ module.exports = async function handler(req, res) {
   const { event, eventId } = buildRecoveryEvent(v);
 
   // 行事曆 = 唯一落地紀錄，寫失敗就回錯。
+  // 事件 id 只由 姓名/電話/日期/時段 決定（M2）：客人若用相同這四項、但修正了
+  // 「地址」或「備註」重送，insertEvent 會撞 409 當重複、不更新 → 行事曆停在舊
+  // 地址，而 Telegram 卻顯示新地址。故 duplicate 時補 patch 地址/說明，讓修正
+  // 真的寫進唯一紀錄。
   let cal;
   try {
     cal = await insertEvent(event, eventId);
+    if (cal && cal.duplicate) {
+      await patchEvent(eventId, { location: event.location, description: event.description });
+    }
   } catch (e) {
     console.error("create-recovery-booking: insertEvent failed:", e);
     return res.status(502).json({ error: "calendar_write_failed" });
