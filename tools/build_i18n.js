@@ -231,10 +231,14 @@ function buildDom(lang, cfg, cluster, SITE) {
     if (t != null) el.innerHTML = t;
     else missing++;
   });
+  document.querySelectorAll("[data-alt-ja], [data-alt-en]").forEach((el) => {
+    const t = el.getAttribute("data-alt-" + lang);
+    if (t) el.setAttribute("alt", t);
+  });
 
   /* 2. strip translation attributes (dead weight on a single-language page) */
   document.querySelectorAll("*").forEach((el) => {
-    ["data-ja", "data-en", "data-ja-html", "data-en-html"].forEach((a) => el.removeAttribute(a));
+    ["data-ja", "data-en", "data-ja-html", "data-en-html", "data-alt-ja", "data-alt-en"].forEach((a) => el.removeAttribute(a));
   });
 
   /* 3. html lang + toggle active state */

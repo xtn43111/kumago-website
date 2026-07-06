@@ -537,3 +537,10 @@ html[lang="ja"] h1, html[lang="ja"] h2, html[lang="ja"] h3, html[lang="ja"] h4 {
 .legal-table th, .legal-table td { padding: 14px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; line-height: 1.7; }
 .legal-table th { width: 32%; min-width: 140px; color: var(--charcoal); font-weight: 700; background: rgba(140,198,63,.06); }
 @media (max-width: 560px) { .legal-table th { min-width: 110px; } }
+
+/* ---------- delivery gallery ---------- */
+.gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.gallery-item { margin: 0; }
+.gallery-item img { width: 100%; height: auto; display: block; border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+.gallery-item figcaption { margin-top: 10px; font-size: .9rem; font-weight: 700; color: var(--ink-soft); text-align: center; }
+@media (max-width: 980px) { .gallery-grid { grid-template-columns: repeat(2, 1fr); } }
