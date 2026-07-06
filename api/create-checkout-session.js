@@ -78,6 +78,29 @@ function shippingFee(pref, city) {
   return null;
 }
 
+/* Server-side postal → (pref, city) lookup, same zipcloud source the form uses.
+ * The client's shipPref/shipCity are NEVER trusted for pricing — a tampered
+ * request could claim 大阪市 (free) while shipping to 京都市 (¥18,000).
+ * Returns { pref, city } on success, null when the postal code is unknown,
+ * or throws on network/service failure (caller falls back + flags the order). */
+async function lookupPostal(postal) {
+  const zip = String(postal || "").replace(/[^0-9]/g, "");
+  if (!/^\d{7}$/.test(zip)) return null;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 5000);
+  try {
+    const r = await fetch("https://zipcloud.ibsnet.co.jp/api/search?zipcode=" + zip, { signal: ctrl.signal });
+    if (!r.ok) throw new Error("zipcloud http " + r.status);
+    const data = await r.json();
+    if (data.status !== 200) throw new Error("zipcloud status " + data.status);
+    const a = data.results && data.results[0];
+    if (!a) return null; // 查無此郵遞區號
+    return { pref: a.address1 || "", city: a.address2 || "" };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function durationLabel(d) {
   if (d === "半年") return "半年";
   if (d === "1年") return "1 年";
@@ -110,9 +133,20 @@ module.exports = async function handler(req, res) {
   if (!PLAN_PRICES[plan] || !PLAN_PRICES[plan][duration]) {
     return res.status(400).json({ error: "invalid_plan_or_duration" });
   }
-  // Recompute the shipping fee from the trusted table; null = outside the online
-  // area, which must go through the LINE quote instead of online checkout.
-  const shipFee = shippingFee(shipPref, shipCity);
+  // Recompute the shipping fee from the trusted table, keyed by a server-side
+  // postal lookup (never the client's shipPref/shipCity — those are display-only).
+  // null fee = outside the online area → must go through the LINE quote instead.
+  let feePref, feeCity, shipVerify;
+  try {
+    const loc = await lookupPostal(postal);
+    if (!loc) return res.status(400).json({ error: "invalid_postal" });
+    feePref = loc.pref; feeCity = loc.city; shipVerify = "postal_ok";
+  } catch (e) {
+    // zipcloud 服務故障（非查無資料）：不擋單，退回客戶端值並標記給老闆稽核
+    console.error("postal lookup failed, falling back to client values:", e.message);
+    feePref = shipPref; feeCity = shipCity; shipVerify = "client_unverified";
+  }
+  const shipFee = shippingFee(feePref, feeCity);
   if (shipFee == null) {
     return res.status(400).json({ error: "area_requires_quote" });
   }
@@ -139,7 +173,7 @@ module.exports = async function handler(req, res) {
   }
   // Out-of-Osaka-City delivery fee (0 = 大阪市内 free, so no line item).
   if (shipFee > 0) {
-    items.push({ name: `市外配送費 Delivery fee (${shipCity || area || ""})`.trim(), amount: shipFee });
+    items.push({ name: `市外配送費 Delivery fee (${feeCity || area || ""})`.trim(), amount: shipFee });
   }
 
   // ---- origin for redirect URLs ----
@@ -169,8 +203,10 @@ module.exports = async function handler(req, res) {
   const meta = {
     plan, duration,
     addons: addonList.join(",") || "(none)",
-    area: shipCity || area || "",
+    area: feeCity || area || "",
     ship_fee: String(shipFee),
+    ship_verify: shipVerify, // postal_ok=郵遞區號伺服器端已驗 / client_unverified=zipcloud當機退回客戶端值，出貨前人工核對
+
     move_in_date: moveInDate,
     delivery_time: time,
     postal: postal || "",
