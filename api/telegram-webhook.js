@@ -25,12 +25,12 @@
 "use strict";
 
 const crypto = require("crypto");
-const { insertEvent, getEvent, patchEvent, listEvents, jstToday } = require("../lib/gcal.js");
+const { insertEvent, getEvent, patchEvent, listEvents, findEventsByPrivateProp, jstToday } = require("../lib/gcal.js");
 const {
   sendTelegramTo, jstDayWindow, buildDigest,
   jstMonthWindow, parseMonth, buildMonthOverview, buildMonthDetail,
 } = require("../lib/telegram.js");
-const { buildManualEvent, parseDate, TEMPLATE, photoDescLine, PHOTO_LINE_RE } = require("../lib/tg_event.js");
+const { buildManualEvent, parseDate, parsePhotoUpdate, TEMPLATE, photoDescLine, PHOTO_LINE_RE } = require("../lib/tg_event.js");
 
 /* Shown in /start & /help: how to ask for a specific day's tidied agenda, and
  * the two whole-month views. */
@@ -114,6 +114,36 @@ function parseMonthCommand(text) {
   return { detail, monthRaw: m[3].trim() };
 }
 
+/* Swap (or add) the 🖼 照片 line in an event description. */
+function descWithPhoto(description, url) {
+  const line = photoDescLine(url);
+  const desc = String(description || "");
+  return PHOTO_LINE_RE.test(desc) ? desc.replace(PHOTO_LINE_RE, line)
+    : desc ? `${desc}\n${line}` : line;
+}
+
+/* Human label for an event when listing ambiguous matches. */
+function eventLabel(ev) {
+  const s = ev.start || {};
+  const t = s.dateTime ? s.dateTime.slice(11, 16) : "整天";
+  return `${ev.summary || "(無標題)"}（${t}）`;
+}
+
+/* Find the ONE event on dateStr whose summary contains keyword (case-
+ * insensitive; empty keyword = any). Returns:
+ *   { event }                     exactly one match
+ *   { candidates: [...] }         several — the owner must narrow it down
+ *   { candidates: [] }            none                                     */
+async function findTargetEvent(dateStr, keyword) {
+  const w = jstDayWindow(dateStr);
+  const events = await listEvents(w.timeMin, w.timeMax);
+  const kw = String(keyword || "").toLowerCase();
+  const hits = kw
+    ? events.filter((ev) => String(ev.summary || "").toLowerCase().includes(kw))
+    : events;
+  return hits.length === 1 ? { event: hits[0] } : { candidates: hits };
+}
+
 function fmtSuccess(view) {
   const e = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const lines = [
@@ -170,6 +200,54 @@ module.exports = async function handler(req, res) {
   if (/^\/(start|help)\b/i.test(text.trim())) {
     await safeReply(chatId, "🐻 KUMAGO 行程小幫手\n\n" + QUERY_HELP + "\n\n" + TEMPLATE, true);
     return res.status(200).json({ ok: true, hint: "help" });
+  }
+
+  // Photo UPDATE: "更新照片：7/5 庭綺" + attached photo(s) → replace the 🖼 照片
+  // link on that EXISTING event (no new event). Single photo → /api/tg-photo;
+  // album → /api/tg-gallery, later photos of the same album appended via the
+  // media_group_id stamped on the event (see the album block below).
+  const upd = parsePhotoUpdate(text, jstToday());
+  if (upd) {
+    if (!upd.ok) {
+      await safeReply(chatId, `⚠️ ${upd.error}`, true);
+      return res.status(200).json({ ok: true, update: "bad_args" });
+    }
+    if (!fileId) {
+      await safeReply(chatId, "⚠️ 要附照片才能更新（照片跟「更新照片：…」打在同一則）", true);
+      return res.status(200).json({ ok: true, update: "no_photo" });
+    }
+    try {
+      const found = await findTargetEvent(upd.date, upd.keyword);
+      if (!found.event) {
+        if (!found.candidates.length) {
+          await safeReply(chatId, `⚠️ ${upd.date} 找不到${upd.keyword ? `含「${upd.keyword}」的` : ""}行程`, true);
+          return res.status(200).json({ ok: true, update: "not_found" });
+        }
+        const list = found.candidates.slice(0, 8).map((ev, i) => `${i + 1}. ${eventLabel(ev)}`).join("\n");
+        await safeReply(chatId, `⚠️ ${upd.date} 有 ${found.candidates.length} 筆，請在指令加標題關鍵字：\n${list}`, true);
+        return res.status(200).json({ ok: true, update: "ambiguous" });
+      }
+      const target = found.event;
+      const base = baseUrl(req);
+      const url = mgid
+        ? galleryUrlFor(base, [fileId]) // album: rest of the photos append below
+        : `${base}/api/tg-photo?id=${encodeURIComponent(fileId)}`;
+      const priv = { galleryIds: fileId };
+      if (mgid) priv.mgid = String(mgid);
+      await patchEvent(target.id, {
+        description: descWithPhoto(target.description, url),
+        extendedProperties: { private: priv },
+      });
+      let reply = `✅ 已更新照片\n📌 ${target.summary || ""}　📅 ${upd.date}`;
+      if (mgid) reply += "\n🖼 相簿其餘照片會自動併入同一連結";
+      if (target.htmlLink) reply += `\n\n🔗 ${target.htmlLink}`;
+      await safeReply(chatId, reply, false);
+      return res.status(200).json({ ok: true, update: "done", eventId: target.id });
+    } catch (e) {
+      console.error("telegram-webhook photo update:", e);
+      await safeReply(chatId, `❌ 更新照片失敗：${e.message}`, true);
+      return res.status(200).json({ ok: true, update: "error", error: e.message });
+    }
   }
 
   // Month query: "/本月" → overview of booked days, "/本月詳細" → full agenda
@@ -269,13 +347,27 @@ module.exports = async function handler(req, res) {
     // Continuation photo (no caption): append its id to the album event. Reply
     // nothing so an N-photo album produces exactly one confirmation.
     if (!existing) {
+      // Not an album-created event — maybe a photo UPDATE album: the captioned
+      // photo stamped its media_group_id onto the target event. Append there.
+      try {
+        const [target] = await findEventsByPrivateProp("mgid", String(mgid));
+        if (target) {
+          const tPriv = (target.extendedProperties && target.extendedProperties.private) || {};
+          const tIds = parseGalleryIds(tPriv.galleryIds);
+          const nIds = tIds.includes(fileId) ? tIds : [...tIds, fileId];
+          await patchEvent(target.id, {
+            description: descWithPhoto(target.description, galleryUrlFor(base, nIds)),
+            extendedProperties: { private: { galleryIds: nIds.join(","), mgid: String(mgid) } },
+          });
+          return res.status(200).json({ ok: true, album: "update_appended", count: nIds.length });
+        }
+      } catch (e) {
+        console.error("album update append:", e);
+      }
       console.warn("album photo before its caption — dropped one file_id");
       return res.status(200).json({ ok: true, album: "waiting" });
     }
-    const line = photoDescLine(gUrl);
-    const desc = PHOTO_LINE_RE.test(existing.description || "")
-      ? existing.description.replace(PHOTO_LINE_RE, line)
-      : `${existing.description || ""}\n${line}`;
+    const desc = descWithPhoto(existing.description, gUrl);
     try {
       await patchEvent(eid, { description: desc, extendedProperties });
       return res.status(200).json({ ok: true, album: "appended", count: ids.length });
