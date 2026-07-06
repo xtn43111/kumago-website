@@ -114,6 +114,29 @@ function parseMonthCommand(text) {
   return { detail, monthRaw: m[3].trim() };
 }
 
+/* Photo file_ids already on an event, so new photos MERGE instead of replace.
+ * Prefer the galleryIds private property (events we built); fall back to
+ * recovering the ids from the 🖼 line's proxy URL (tg-photo?id=… /
+ * tg-gallery?ids=…). A foreign (non-proxy) photo URL yields [] — it can't be
+ * embedded in a gallery, so it ends up replaced. */
+function photoIdsFromEvent(ev) {
+  const priv = (ev.extendedProperties && ev.extendedProperties.private) || {};
+  const fromProp = parseGalleryIds(priv.galleryIds);
+  if (fromProp.length) return fromProp;
+  const m = String(ev.description || "").match(/\/api\/tg-(?:photo\?id=|gallery\?ids=)([^"&\s]+)/);
+  if (!m) return [];
+  return m[1].split(",").map((s) => {
+    try { return decodeURIComponent(s); } catch { return s; }
+  }).filter(Boolean);
+}
+
+/* One photo → direct tg-photo link; several → one gallery page. */
+function urlForIds(base, ids) {
+  return ids.length === 1
+    ? `${base}/api/tg-photo?id=${encodeURIComponent(ids[0])}`
+    : galleryUrlFor(base, ids);
+}
+
 /* Swap (or add) the 🖼 照片 line in an event description. */
 function descWithPhoto(description, url) {
   const line = photoDescLine(url);
@@ -164,12 +187,16 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: "method_not_allowed" });
   }
 
-  // Reject anything that isn't Telegram (when a secret is configured).
+  // Fail-closed: this endpoint can create calendar events and dump a month of
+  // customer PII, so an unset/empty secret must mean "reject all", never
+  // "skip the check" (Vercel sensitive vars have read back empty before).
   const wantSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (wantSecret) {
-    const got = req.headers["x-telegram-bot-api-secret-token"];
-    if (got !== wantSecret) return res.status(401).json({ error: "unauthorized" });
+  if (!wantSecret) {
+    console.error("telegram-webhook: TELEGRAM_WEBHOOK_SECRET unset — rejecting (fail-closed)");
+    return res.status(500).json({ error: "webhook_not_configured" });
   }
+  const got = req.headers["x-telegram-bot-api-secret-token"];
+  if (got !== wantSecret) return res.status(401).json({ error: "unauthorized" });
 
   let body = req.body;
   if (typeof body === "string") {
@@ -181,9 +208,14 @@ module.exports = async function handler(req, res) {
   // Ack non-message updates fast so Telegram doesn't retry.
   if (!msg || !msg.chat) return res.status(200).json({ ok: true, ignored: "no_message" });
 
-  // Owner-only: silently ignore anyone else.
+  // Owner-only, fail-closed: if TELEGRAM_CHAT_ID is unset/empty, nobody is the
+  // owner — ignore everyone rather than treating everyone as the owner.
   const owner = process.env.TELEGRAM_CHAT_ID;
-  if (owner && String(msg.chat.id) !== String(owner)) {
+  if (!owner) {
+    console.error("telegram-webhook: TELEGRAM_CHAT_ID unset — ignoring all senders (fail-closed)");
+    return res.status(200).json({ ok: true, ignored: "owner_not_configured" });
+  }
+  if (String(msg.chat.id) !== String(owner)) {
     return res.status(200).json({ ok: true, ignored: "not_owner" });
   }
   const chatId = msg.chat.id;
@@ -229,16 +261,17 @@ module.exports = async function handler(req, res) {
       }
       const target = found.event;
       const base = baseUrl(req);
-      const url = mgid
-        ? galleryUrlFor(base, [fileId]) // album: rest of the photos append below
-        : `${base}/api/tg-photo?id=${encodeURIComponent(fileId)}`;
-      const priv = { galleryIds: fileId };
+      // MERGE with whatever photos the event already carries — adding never
+      // discards them. (Album: the remaining photos append below via mgid.)
+      const prevIds = photoIdsFromEvent(target);
+      const ids = prevIds.includes(fileId) ? prevIds : [...prevIds, fileId];
+      const priv = { galleryIds: ids.join(",") };
       if (mgid) priv.mgid = String(mgid);
       await patchEvent(target.id, {
-        description: descWithPhoto(target.description, url),
+        description: descWithPhoto(target.description, urlForIds(base, ids)),
         extendedProperties: { private: priv },
       });
-      let reply = `✅ 已更新照片\n📌 ${target.summary || ""}　📅 ${upd.date}`;
+      let reply = `✅ 已加照片（目前共 ${ids.length} 張）\n📌 ${target.summary || ""}　📅 ${upd.date}`;
       if (mgid) reply += "\n🖼 相簿其餘照片會自動併入同一連結";
       if (target.htmlLink) reply += `\n\n🔗 ${target.htmlLink}`;
       await safeReply(chatId, reply, false);
@@ -356,7 +389,7 @@ module.exports = async function handler(req, res) {
           const tIds = parseGalleryIds(tPriv.galleryIds);
           const nIds = tIds.includes(fileId) ? tIds : [...tIds, fileId];
           await patchEvent(target.id, {
-            description: descWithPhoto(target.description, galleryUrlFor(base, nIds)),
+            description: descWithPhoto(target.description, urlForIds(base, nIds)),
             extendedProperties: { private: { galleryIds: nIds.join(","), mgid: String(mgid) } },
           });
           return res.status(200).json({ ok: true, album: "update_appended", count: nIds.length });
