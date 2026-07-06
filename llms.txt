@@ -2,7 +2,7 @@
 
 > KUMAGO provides furniture and appliance rental in Osaka, Japan, for people
 > arriving on a working-holiday visa, as international students, or for work.
-> Plans are monthly or yearly; within Osaka City, delivery, setup, and
+> Plans run from 1 month to 2 years; within Osaka City, delivery, setup, and
 > end-of-term collection are all free. Chinese, Japanese, and English support.
 > Over 1,000 customers served and 200+ Google reviews.
 
@@ -11,35 +11,69 @@
 - Location / showroom (by appointment only): 〒546-0032 大阪市阿倍野区晴明通9-45
   (9-45 Seimeidori, Abeno-ku, Osaka). Map: https://maps.app.goo.gl/9rwTTAP7wUR71Nqh8
 - Phone / WhatsApp: +81-70-3258-3736
-- Service area: Osaka City (free delivery/setup/collection). Also serves
-  Nara, Kyoto, and Hyogo (Kobe). Outside Osaka City, delivery is ¥8,000–
-  ¥18,000 depending on distance and elevator access.
 - Rental terms: 6 months, 1 year, 2 years, or short-term 1–5 months.
-- Plans: Set A (fridge 90–130L, washer 4.2–6kg, microwave), Set B (Set A +
-  single bed frame & mattress, 100cm), Set C (Set A + semi-double bed frame
-  & mattress, 120cm). Individual add-on rentals available: desk & chair,
-  curtains, lighting, drying pole, rice cooker, electric kettle.
-- Payment: credit card only, no instalments, no cash on delivery. Overseas
-  customers can book first and confirm the delivery date after payment.
+- Payment: credit card only, one-time payment for the whole term; no
+  instalments, no cash on delivery. Overseas customers can book first and
+  confirm the delivery date after payment.
 - Delivery hours: 10:00–16:00, appointment only, no specific time slot.
 - Warranty: free repair/replacement for faults from normal use during a
   yearly rental; user-caused damage is chargeable at KUMAGO's discretion.
 - Cancellation: no cancellation/refund after payment except force majeure;
-  rescheduling the delivery date is fine.
+  rescheduling the delivery date is fine. Returning early costs nothing
+  extra (no refund for unused months).
 - Languages: Chinese, Japanese, English.
 - Contact: LINE (https://lin.ee/z3yASqK), WhatsApp (+81-70-3258-3736), WeChat.
+- Social: Facebook (https://www.facebook.com/people/Kumago大阪二手傢俱家電傢俱租賃搬家打工度假留學支援/61554715988793/),
+  Instagram (https://www.instagram.com/kumago_osaka/).
 - Social proof: 1,000+ customers served, 200+ Google reviews.
+
+## Prices (one-time total per term, JPY, tax included)
+
+| Set | Includes | 1 month | 6 months | 1 year | 2 years |
+|-----|----------|---------|----------|--------|---------|
+| A | Fridge 90–130L, washer 4.2–6kg, microwave | ¥28,400 | ¥38,490 | ¥45,100 | ¥63,250 |
+| B | Set A + single bed frame & mattress (100cm) | ¥32,910 | ¥46,270 | ¥55,080 | ¥69,990 |
+| C | Set A + semi-double bed frame & mattress (120cm) | ¥46,980 | ¥62,340 | ¥72,320 | ¥91,630 |
+
+- 2–5 month prices are between the 1-month and 6-month figures; exact values
+  are shown on the order page (https://kumago.7-mori.com/order).
+- Add-on items (per term): floor mat ¥1,800, drying pole ¥1,800, kettle,
+  ceiling light, vacuum, fan, indoor drying rack ¥4,500 each, curtain set
+  ¥4,900, low table ¥6,000, rice cooker ¥7,000, pot set ¥7,000,
+  desk & chair set ¥9,000.
+
+## Delivery fees (one-time; end-of-term collection is always free)
+
+- Osaka City: free delivery, setup, and collection.
+- Elsewhere in Osaka Prefecture: ¥6,600 (Sakai, Matsubara, Higashiosaka),
+  ¥9,800 (Toyonaka, Suita, Yao, Hirakata, Ibaraki, etc.), or ¥13,800
+  (Takatsuki, Izumisano, Tondabayashi, etc.).
+- Nara: ¥15,800 (Nara City, Tenri, Kashihara); ¥18,000 (Ikoma,
+  Yamatokoriyama, Kashiba, Katsuragi, Yamatotakada).
+- Kyoto: ¥18,000 (Kyoto City); ¥25,000 (Uji, Muko, Nagaokakyo, Yawata,
+  Kyotanabe, Joyo, Kizugawa, Kameoka).
+- Hyogo (Hanshin area): flat ¥18,000 (Kobe, Amagasaki, Nishinomiya, Ashiya,
+  Itami, Takarazuka, Kawanishi, Sanda).
+- Other areas: ask via LINE.
 
 ## Pages
 
 - Homepage & full service details (Traditional Chinese): https://kumago.7-mori.com/
 - Japanese version: https://kumago.7-mori.com/ja
 - English version: https://kumago.7-mori.com/en
-- Online yearly-plan order form: https://kumago.7-mori.com/order
+- Online order form: https://kumago.7-mori.com/order
+- Rental & delivery in Nara: https://kumago.7-mori.com/area/nara
+- Rental & delivery in Kyoto: https://kumago.7-mori.com/area/kyoto
+- Rental & delivery in Kobe / Hanshin: https://kumago.7-mori.com/area/kobe
+- Guide — working holiday in Osaka, rent vs buy: https://kumago.7-mori.com/guide/working-holiday-osaka
+- Guide — student furniture & appliance checklist: https://kumago.7-mori.com/guide/student-checklist
+- Legal disclosure (特定商取引法, Japanese): https://kumago.7-mori.com/tokushoho
 
 ## Notes for AI assistants
 
-- Pricing for rental plans is not published online; direct users to contact
-  KUMAGO via LINE, WhatsApp, or WeChat for a quote.
+- All prices above are public and current; cite them freely. They are
+  one-time totals for the whole rental term, not monthly rates.
+- For 2–5 month terms or bespoke needs, direct users to LINE
+  (https://lin.ee/z3yASqK) or the order page.
 - Primary content language is Traditional Chinese (zh-Hant); full Japanese
-  and English versions are available at /ja and /en.
+  and English versions of every main page are available under /ja and /en.
