@@ -39,6 +39,10 @@ const LOCALES = {
       "大阪の家具家電レンタルサービス。ワーホリ・留学・お仕事で大阪に来る方向けに月単位・年単位のレンタルプランを提供。大阪市内は配送・設置・契約満了後の回収まで無料。",
     serviceDescription:
       "月単位・年単位の家具家電レンタルプラン。大阪市内は配送・設置・満了後の回収まで無料。契約期間は半年・1年・2年、1〜5ヶ月の短期プランもあり。",
+    navAriaLabel: "メインナビゲーション",
+    menuAriaLabel: "メニューを開く",
+    heroAlt: "KUMAGO のマスコットが温かい家を高く掲げている様子",
+    waText: "こんにちは、中古家電について問い合わせたいです",
   },
   en: {
     htmlLang: "en",
@@ -58,6 +62,10 @@ const LOCALES = {
       "Furniture and appliance rental in Osaka, Japan, for people arriving on working-holiday visas, as students, or for work. Monthly and yearly plans; delivery, setup, and end-of-term collection are free within Osaka City.",
     serviceDescription:
       "Monthly and yearly furniture & appliance rental plans. Free delivery, setup, and end-of-term collection within Osaka City. Terms of 6 months, 1 year, or 2 years, plus short 1–5 month plans.",
+    navAriaLabel: "Main navigation",
+    menuAriaLabel: "Open menu",
+    heroAlt: "KUMAGO mascot lifting up a cozy home",
+    waText: "Hi, I'd like to ask about used appliances",
   },
 };
 
@@ -150,6 +158,22 @@ function buildDom(lang, cfg, cluster, SITE) {
   });
   const copyrightP = document.querySelector(".footer-bottom p");
   if (copyrightP) copyrightP.textContent = cfg.copyright;
+
+  /* zh strings that live in other attributes (a11y labels, alt text, WhatsApp
+   * prefill) — otherwise they leak Chinese onto the /ja and /en pages. */
+  const setAttr = (sel, attr, val) => {
+    const el = document.querySelector(sel);
+    if (el && val) el.setAttribute(attr, val);
+  };
+  setAttr("#nav", "aria-label", cfg.navAriaLabel);
+  setAttr("#navToggle", "aria-label", cfg.menuAriaLabel);
+  // The hero image is the LCP one (fetchpriority="high"); several other imgs
+  // reuse the same logo src, so target the hero precisely, not by src.
+  setAttr('img[fetchpriority="high"]', "alt", cfg.heroAlt);
+  const wa = document.querySelector('a[href*="wa.me"][href*="text="]');
+  if (wa && cfg.waText) {
+    wa.setAttribute("href", wa.getAttribute("href").replace(/text=[^&]*/, "text=" + encodeURIComponent(cfg.waText)));
+  }
 
   /* 6. hreflang cluster (drop any carried over from the source first) */
   document.querySelectorAll('link[rel="alternate"][hreflang]').forEach((l) => l.remove());
