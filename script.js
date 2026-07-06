@@ -79,7 +79,12 @@
           switchInPlace(lang);
         } else {
           if (!LANG_PATH[lang]) return;
-          window.location.href = LANG_PATH[lang] + window.location.hash;
+          // Keep the visitor on the equivalent subpage (/area/*, /guide/*)
+          // when switching language, instead of bouncing to the homepage.
+          const m = window.location.pathname.match(/^\/(?:ja|en)(\/.*)?$/);
+          const rest = m ? (m[1] || "") : (window.location.pathname === "/" ? "" : window.location.pathname);
+          const base = lang === "zh" ? (rest || "/") : LANG_PATH[lang] + rest;
+          window.location.href = base + window.location.hash;
         }
       })
     );
