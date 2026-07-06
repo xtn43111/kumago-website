@@ -38,17 +38,24 @@
   const inPlace = document.documentElement.dataset.i18n === "inplace";
   let currentLang = { "zh-Hant": "zh", ja: "ja", en: "en" }[document.documentElement.lang] || "zh";
 
-  // Reversibly localise static [data-ja] text and [data-ja-ph] placeholders,
-  // capturing the original zh once so we can switch back.
+  // Reversibly localise static text and placeholders across zh/ja/en, capturing
+  // the original zh once so we can switch back. English falls back to zh when a
+  // given string has no data-en yet, so a partial en translation never breaks
+  // the page (strings simply stay Chinese until translated).
   function applyStaticI18n(lang) {
-    const ja = lang === "ja";
-    document.querySelectorAll("[data-ja]").forEach((el) => {
+    document.querySelectorAll("[data-ja], [data-en]").forEach((el) => {
       if (el.dataset.zh === undefined) el.dataset.zh = el.textContent;
-      el.textContent = ja ? el.dataset.ja : el.dataset.zh;
+      const next = lang === "ja" ? el.dataset.ja
+        : lang === "en" ? (el.dataset.en || el.dataset.zh)
+        : el.dataset.zh;
+      if (next !== undefined) el.textContent = next;
     });
-    document.querySelectorAll("[data-ja-ph]").forEach((el) => {
+    document.querySelectorAll("[data-ja-ph], [data-en-ph]").forEach((el) => {
       if (el.dataset.zhPh === undefined) el.dataset.zhPh = el.getAttribute("placeholder") || "";
-      el.setAttribute("placeholder", ja ? el.dataset.jaPh : el.dataset.zhPh);
+      const next = lang === "ja" ? el.dataset.jaPh
+        : lang === "en" ? (el.dataset.enPh || el.dataset.zhPh)
+        : el.dataset.zhPh;
+      if (next !== undefined) el.setAttribute("placeholder", next);
     });
   }
 

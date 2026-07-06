@@ -14,25 +14,28 @@
   // 期別價格完全對齊 plan_data.PLANS
   const PLANS = {
     A: {
-      name: { zh: "A 套組", ja: "A セット" },
+      name: { zh: "A 套組", ja: "A セット", en: "Set A" },
       desc: { zh: "冷凍冷藏庫 90–130L・洗衣機 4.2–6kg・微波爐",
-              ja: "冷凍冷蔵庫 90〜130L・洗濯機 4.2〜6kg・電子レンジ" },
+              ja: "冷凍冷蔵庫 90〜130L・洗濯機 4.2〜6kg・電子レンジ",
+              en: "Fridge-freezer 90–130L, washing machine 4.2–6kg, microwave" },
       img: "assets/sets/set_A.jpg",
       prices: { "1個月": 28400, "2個月": 31130, "3個月": 32920, "4個月": 36250,
                 "5個月": 37430, "半年": 38490, "1年": 45100, "2年": 63250 },
     },
     B: {
-      name: { zh: "B 套組", ja: "B セット" },
+      name: { zh: "B 套組", ja: "B セット", en: "Set B" },
       desc: { zh: "A 套組 ＋ 單人床架與床墊（寬 100cm）",
-              ja: "A セット ＋ シングルベッドフレーム・マットレス（幅100cm）" },
+              ja: "A セット ＋ シングルベッドフレーム・マットレス（幅100cm）",
+              en: "Set A + single bed frame & mattress (100cm wide)" },
       img: "assets/sets/set_B.jpg",
       prices: { "1個月": 32910, "2個月": 35640, "3個月": 38400, "4個月": 41820,
                 "5個月": 43640, "半年": 46270, "1年": 55080, "2年": 69990 },
     },
     C: {
-      name: { zh: "C 套組", ja: "C セット" },
+      name: { zh: "C 套組", ja: "C セット", en: "Set C" },
       desc: { zh: "A 套組 ＋ 單人加大床架與床墊（寬 120cm）",
-              ja: "A セット ＋ セミダブルベッドフレーム・マットレス（幅120cm）" },
+              ja: "A セット ＋ セミダブルベッドフレーム・マットレス（幅120cm）",
+              en: "Set A + semi-double bed frame & mattress (120cm wide)" },
       img: "assets/sets/set_C.jpg",
       prices: { "1個月": 46980, "2個月": 49360, "3個月": 52430, "4個月": 55690,
                 "5個月": 59350, "半年": 62340, "1年": 72320, "2年": 91630 },
@@ -44,18 +47,18 @@
   const SHORT_DURATIONS = ["1個月", "2個月", "3個月", "4個月", "5個月"];
 
   const ADDONS = [
-    { key: "floor_mat",     price: 1800, zh: "地板保護墊",   ja: "フロアマット" },
-    { key: "kettle",        price: 4500, zh: "熱水壺",       ja: "電気ケトル" },
-    { key: "ceiling_light", price: 4500, zh: "可調光吸頂燈", ja: "調光シーリングライト" },
-    { key: "curtain",       price: 4900, zh: "4 片窗簾組",   ja: "カーテン4枚セット" },
-    { key: "vacuum",        price: 4500, zh: "吸塵器",       ja: "掃除機" },
-    { key: "fan",           price: 4500, zh: "電風扇",       ja: "扇風機" },
-    { key: "clothes_rack",  price: 4500, zh: "室內掛衣架",   ja: "室内物干しラック" },
-    { key: "desk",          price: 9000, zh: "桌椅組",       ja: "デスク・チェアセット" },
-    { key: "low_table",     price: 6000, zh: "和式桌（75×50×31.5cm）", ja: "和式テーブル（75×50×31.5cm）" },
-    { key: "rice_cooker",   price: 7000, zh: "電飯鍋",       ja: "炊飯器" },
-    { key: "pot",           price: 7000, zh: "鍋具組",       ja: "鍋セット" },
-    { key: "clothesline",   price: 1800, zh: "曬衣桿",       ja: "物干し竿" },
+    { key: "floor_mat",     price: 1800, zh: "地板保護墊",   ja: "フロアマット", en: "Floor protection mat" },
+    { key: "kettle",        price: 4500, zh: "熱水壺",       ja: "電気ケトル", en: "Electric kettle" },
+    { key: "ceiling_light", price: 4500, zh: "可調光吸頂燈", ja: "調光シーリングライト", en: "Dimmable ceiling light" },
+    { key: "curtain",       price: 4900, zh: "4 片窗簾組",   ja: "カーテン4枚セット", en: "Curtain set (4 panels)" },
+    { key: "vacuum",        price: 4500, zh: "吸塵器",       ja: "掃除機", en: "Vacuum cleaner" },
+    { key: "fan",           price: 4500, zh: "電風扇",       ja: "扇風機", en: "Electric fan" },
+    { key: "clothes_rack",  price: 4500, zh: "室內掛衣架",   ja: "室内物干しラック", en: "Indoor drying rack" },
+    { key: "desk",          price: 9000, zh: "桌椅組",       ja: "デスク・チェアセット", en: "Desk & chair set" },
+    { key: "low_table",     price: 6000, zh: "和式桌（75×50×31.5cm）", ja: "和式テーブル（75×50×31.5cm）", en: "Low table (75×50×31.5cm)" },
+    { key: "rice_cooker",   price: 7000, zh: "電飯鍋",       ja: "炊飯器", en: "Rice cooker" },
+    { key: "pot",           price: 7000, zh: "鍋具組",       ja: "鍋セット", en: "Pot set" },
+    { key: "clothesline",   price: 1800, zh: "曬衣桿",       ja: "物干し竿", en: "Drying pole" },
   ].map((a) => ({ ...a, img: `assets/addons/${a.key}.jpg` }));
 
   /* =================== 配送費（依郵便番號辨識的市區自動計算） ===================
@@ -85,15 +88,17 @@
     pref = pref || "";
     city = city || "";
     const has = (name) => city.indexOf(name) === 0; // 政令市は「堺市堺区」等 → 前方一致
-    const ok = (fee, zh, ja) => ({ fee, online: true, zh: zh || city, ja: ja || city });
-    const no = () => ({ fee: null, online: false, zh: city || pref || "", ja: city || pref || "" });
+    // en falls back to the raw (Japanese-script) city name, same as zh/ja do
+    // for tiers where no explicit label is given below — we never invent romaji.
+    const ok = (fee, zh, ja, en) => ({ fee, online: true, zh: zh || city, ja: ja || city, en: en || zh || city });
+    const no = () => ({ fee: null, online: false, zh: city || pref || "", ja: city || pref || "", en: city || pref || "" });
     if (pref === "大阪府") {
-      if (has("大阪市")) return ok(0, "大阪市內（免費配送）", "大阪市内（配送無料）");
+      if (has("大阪市")) return ok(0, "大阪市內（免費配送）", "大阪市内（配送無料）", "Osaka City (free delivery)");
       for (const tier of SHIP_OSAKA_TIERS) if (tier.cities.some(has)) return ok(tier.fee);
       return no();
     }
     if (pref === "京都府") {
-      if (has("京都市")) return ok(18000, "京都市", "京都市");
+      if (has("京都市")) return ok(18000, "京都市", "京都市", "Kyoto City");
       if (KYOTO_25000.some(has)) return ok(25000);
       return no();
     }
@@ -109,40 +114,55 @@
     return no();
   }
 
-  const SHIP_FEE_LABEL = { zh: "市外配送費", ja: "市外配送料" };
-  const SHIP_FREE_LABEL = { zh: "大阪市內配送", ja: "大阪市内配送" };
+  const SHIP_FEE_LABEL = { zh: "市外配送費", ja: "市外配送料", en: "Out-of-city delivery fee" };
+  const SHIP_FREE_LABEL = { zh: "大阪市內配送", ja: "大阪市内配送", en: "Osaka City delivery" };
 
   const TIMES = [
-    { key: "09-1130", zh: "09:00–11:30", ja: "09:00〜11:30" },
-    { key: "1230-16", zh: "12:30–16:00", ja: "12:30〜16:00" },
+    { key: "09-1130", zh: "09:00–11:30", ja: "09:00〜11:30", en: "09:00–11:30" },
+    { key: "1230-16", zh: "12:30–16:00", ja: "12:30〜16:00", en: "12:30–16:00" },
   ];
 
   const ELEVATORS = [
-    { key: "有",     zh: "有電梯",   ja: "エレベーターあり" },
-    { key: "無",     zh: "無電梯",   ja: "エレベーターなし" },
+    { key: "有",     zh: "有電梯",   ja: "エレベーターあり", en: "Elevator available" },
+    { key: "無",     zh: "無電梯",   ja: "エレベーターなし", en: "No elevator" },
   ];
 
   // 無電梯時的人工樓層搬運費（與後端 create-checkout-session.js 同步）
   const NO_ELEVATOR_FEE = 3300;
-  const NO_ELEVATOR_LABEL = { zh: "無電梯樓層搬運費", ja: "エレベーターなし階上げ料" };
+  const NO_ELEVATOR_LABEL = { zh: "無電梯樓層搬運費", ja: "エレベーターなし階上げ料", en: "No-elevator carry-up fee" };
 
   const MAP_CONFIRMS = [
-    { key: "correct",   zh: "位置正確",   ja: "位置は正しい" },
-    { key: "incorrect", zh: "位置不正確", ja: "位置が違う" },
+    { key: "correct",   zh: "位置正確",   ja: "位置は正しい", en: "Location is correct" },
+    { key: "incorrect", zh: "位置不正確", ja: "位置が違う", en: "Location is incorrect" },
   ];
 
   /* =================== i18n micro-helpers =================== */
-  const L = () => (document.documentElement.lang === "ja" ? "ja" : "zh");
+  const L = () => {
+    const lang = document.documentElement.lang;
+    if (lang === "ja") return "ja";
+    if (lang === "en") return "en";
+    return "zh";
+  };
   const T = {
     durLabel: (d) => {
-      if (d === "半年") return "半年";
-      if (d === "1年") return "1 年";
-      if (d === "2年") return "2 年";
+      const lang = L();
+      if (d === "半年") return lang === "en" ? "6 Months" : "半年";
+      if (d === "1年") return lang === "en" ? "1 Year" : "1 年";
+      if (d === "2年") return lang === "en" ? "2 Years" : "2 年";
       const n = d.replace("個月", "");
-      return L() === "ja" ? `${n} ヶ月` : `${n} 個月`;
+      if (lang === "ja") return `${n} ヶ月`;
+      if (lang === "en") return `${n} Month${n === "1" ? "" : "s"}`;
+      return `${n} 個月`;
     },
     yen: (n) => "¥" + n.toLocaleString("ja-JP"),
-    t: (zh, ja) => (L() === "ja" ? ja : zh),
+    // Third arg (en) is optional — omit it to safely fall back to the zh string
+    // (never renders undefined/blank for languages we haven't translated yet).
+    t: (zh, ja, en) => {
+      const lang = L();
+      if (lang === "ja") return ja;
+      if (lang === "en") return en !== undefined ? en : zh;
+      return zh;
+    },
   };
 
   /* =================== STATE =================== */
@@ -174,7 +194,7 @@
         `<span class="plan-info">` +
           `<span class="plan-head"><span class="plan-letter">${k}</span><span class="opt-title">${p.name[L()]}</span></span>` +
           `<span class="opt-desc">${p.desc[L()]}</span>` +
-          `<span class="opt-from">${T.t("最低", "最安")} ${T.yen(Math.min.apply(null, Object.values(p.prices)))}~</span>` +
+          `<span class="opt-from">${T.t("最低", "最安", "From")} ${T.yen(Math.min.apply(null, Object.values(p.prices)))}~</span>` +
         `</span>`;
       el.addEventListener("click", () => {
         state.plan = k;
@@ -242,7 +262,7 @@
     time.innerHTML = "";
     const ph = document.createElement("option");
     ph.value = "";
-    ph.textContent = T.t("請選擇時段", "時間帯を選択");
+    ph.textContent = T.t("請選擇時段", "時間帯を選択", "Select a time slot");
     ph.disabled = true;
     ph.selected = !keep;
     time.appendChild(ph);
@@ -271,16 +291,18 @@
       box.className = "ship-zone warn";
       box.textContent = T.t(
         `很抱歉，「${s.zh}」目前不在配送範圍內。如有需要請透過 LINE 與我們聯繫。`,
-        `申し訳ございません。「${s.ja}」は配送対象エリア外です。ご希望の場合は LINE までご連絡ください。`
+        `申し訳ございません。「${s.ja}」は配送対象エリア外です。ご希望の場合は LINE までご連絡ください。`,
+        `Sorry, "${s.en}" is currently outside our delivery area. Please contact us on LINE if you need service there.`
       );
     } else if (s.fee === 0) {
       box.className = "ship-zone ok";
-      box.textContent = T.t(`配送地區：${s.zh}・免運費`, `配送エリア：${s.ja}・送料無料`);
+      box.textContent = T.t(`配送地區：${s.zh}・免運費`, `配送エリア：${s.ja}・送料無料`, `Delivery area: ${s.en} · Free delivery`);
     } else {
       box.className = "ship-zone";
       box.textContent = T.t(
         `配送地區：${s.zh}・市外配送費 ${T.yen(s.fee)}`,
-        `配送エリア：${s.ja}・市外送料 ${T.yen(s.fee)}`
+        `配送エリア：${s.ja}・市外送料 ${T.yen(s.fee)}`,
+        `Delivery area: ${s.en} · Out-of-city delivery fee ${T.yen(s.fee)}`
       );
     }
   }
@@ -315,12 +337,12 @@
     if (raw.length !== 7) {
       hint.hidden = false;
       hint.className = "field-hint err";
-      hint.textContent = T.t("請輸入 7 位數郵便番號（例：530-0001）", "7桁の郵便番号を入力してください（例：530-0001）");
+      hint.textContent = T.t("請輸入 7 位數郵便番號（例：530-0001）", "7桁の郵便番号を入力してください（例：530-0001）", "Please enter a 7-digit postal code (e.g. 530-0001)");
       return;
     }
     hint.hidden = false;
     hint.className = "field-hint";
-    hint.textContent = T.t("查詢中…", "検索中…");
+    hint.textContent = T.t("查詢中…", "検索中…", "Searching…");
     try {
       const r = await fetch("https://zipcloud.ibsnet.co.jp/api/search?zipcode=" + raw);
       const j = await r.json();
@@ -333,17 +355,17 @@
         state.ship = shippingFor(state.shipPref, state.shipCity);
         renderShipZone();
         hint.className = "field-hint ok";
-        hint.textContent = T.t("已帶入地址，請接著填寫番地與建物名", "住所を入力しました。番地・建物名をご記入ください");
+        hint.textContent = T.t("已帶入地址，請接著填寫番地與建物名", "住所を入力しました。番地・建物名をご記入ください", "Address filled in — please enter your block/lot number and building name");
         $("#fBanchi").focus();
         updateMapLink();
         recalc(); // 運費可能變動 → 重算合計與按鈕
       } else {
         hint.className = "field-hint err";
-        hint.textContent = T.t("查無此郵便番號，請確認後再試", "該当する住所が見つかりません。番号をご確認ください");
+        hint.textContent = T.t("查無此郵便番號，請確認後再試", "該当する住所が見つかりません。番号をご確認ください", "No matching address found. Please check the postal code and try again");
       }
     } catch (e) {
       hint.className = "field-hint err";
-      hint.textContent = T.t("查詢失敗，請手動輸入地址", "検索に失敗しました。住所を手入力してください");
+      hint.textContent = T.t("查詢失敗，請手動輸入地址", "検索に失敗しました。住所を手入力してください", "Search failed. Please enter your address manually");
     }
   }
 
@@ -454,7 +476,7 @@
     if (!items.length) {
       const p = document.createElement("p");
       p.className = "sum-empty";
-      p.textContent = T.t("請先選擇方案與租期", "プランとレンタル期間をお選びください");
+      p.textContent = T.t("請先選擇方案與租期", "プランとレンタル期間をお選びください", "Please choose a set and rental term first");
       box.appendChild(p);
     } else {
       items.forEach((i) => {
@@ -482,12 +504,12 @@
     // 清單外地區 → 走 LINE 報價；其餘（含尚未輸入郵便番號）→ 線上付款
     if (state.ship && !state.ship.online) {
       btn.classList.add("is-line");
-      btn.textContent = T.t("此地區請透過 LINE 洽詢", "対象エリア外・LINE でお問い合わせ");
+      btn.textContent = T.t("此地區請透過 LINE 洽詢", "対象エリア外・LINE でお問い合わせ", "Outside delivery area — please contact us on LINE");
     } else {
       btn.classList.remove("is-line");
       btn.textContent = ready
-        ? T.t(`前往付款 ${T.yen(total)}`, `お支払いへ進む ${T.yen(total)}`)
-        : T.t("前往付款", "お支払いへ進む");
+        ? T.t(`前往付款 ${T.yen(total)}`, `お支払いへ進む ${T.yen(total)}`, `Proceed to Payment ${T.yen(total)}`)
+        : T.t("前往付款", "お支払いへ進む", "Proceed to Payment");
     }
   }
 
@@ -526,19 +548,19 @@
 
   function validate(d) {
     const miss = [];
-    if (!d.plan) miss.push(T.t("方案", "プラン"));
-    if (!d.duration) miss.push(T.t("租期", "レンタル期間"));
-    if (!d.moveInDate) miss.push(T.t("入住日", "入居日"));
-    if (!d.time) miss.push(T.t("到貨時段", "配送時間帯"));
-    if (!state.ship) miss.push(T.t("郵便番號（以確認配送費）", "郵便番号（送料の確認のため）"));
-    if (!d.addr1) miss.push(T.t("縣市區町名（可用郵便番號帶入）", "住所（郵便番号で自動入力可）"));
-    if (!d.banchi) miss.push(T.t("丁目・番地・號", "番地"));
-    if (!d.noRoom && !d.room) miss.push(T.t("房號（或勾選無房號）", "部屋番号（または「部屋番号なし」）"));
-    if (!d.elevator) miss.push(T.t("電梯", "エレベーター"));
+    if (!d.plan) miss.push(T.t("方案", "プラン", "Set"));
+    if (!d.duration) miss.push(T.t("租期", "レンタル期間", "Rental term"));
+    if (!d.moveInDate) miss.push(T.t("入住日", "入居日", "Move-in date"));
+    if (!d.time) miss.push(T.t("到貨時段", "配送時間帯", "Delivery time slot"));
+    if (!state.ship) miss.push(T.t("郵便番號（以確認配送費）", "郵便番号（送料の確認のため）", "Postal code (to confirm delivery fee)"));
+    if (!d.addr1) miss.push(T.t("縣市區町名（可用郵便番號帶入）", "住所（郵便番号で自動入力可）", "Address (auto-fillable via postal code)"));
+    if (!d.banchi) miss.push(T.t("丁目・番地・號", "番地", "Block/lot number"));
+    if (!d.noRoom && !d.room) miss.push(T.t("房號（或勾選無房號）", "部屋番号（または「部屋番号なし」）", "Room number (or check \"no room number\")"));
+    if (!d.elevator) miss.push(T.t("電梯", "エレベーター", "Elevator"));
     if (d.mapConfirm === "incorrect" && !customMapUrl())
-      miss.push(T.t("正確位置的 Google 地圖網址", "正しい位置の Googleマップ URL"));
-    if (!d.name) miss.push(T.t("姓名", "お名前"));
-    if (!d.contact) miss.push(T.t("聯絡方式", "ご連絡先"));
+      miss.push(T.t("正確位置的 Google 地圖網址", "正しい位置の Googleマップ URL", "Google Maps URL for the correct location"));
+    if (!d.name) miss.push(T.t("姓名", "お名前", "Name"));
+    if (!d.contact) miss.push(T.t("聯絡方式", "ご連絡先", "Contact info"));
     return miss;
   }
 
@@ -555,20 +577,20 @@
     const total = items.reduce((s, i) => s + i.amount, 0);
     const areaName = (state.ship && state.ship[L()]) || d.area || `〒${d.postal}`;
     const lines = [
-      T.t("您好，我想預訂年租方案，想確認這個地區是否能配送：", "年間レンタルを予約したいです。配送可否を確認したいです："),
-      `${T.t("方案", "プラン")}：${items[0] ? items[0].label : ""}`,
+      T.t("您好，我想預訂年租方案，想確認這個地區是否能配送：", "年間レンタルを予約したいです。配送可否を確認したいです：", "Hi, I'd like to book an annual rental plan. Could you confirm if delivery is available in this area:"),
+      `${T.t("方案", "プラン", "Plan")}：${items[0] ? items[0].label : ""}`,
       d.addons.length
-        ? `${T.t("加購", "追加")}：${ADDONS.filter((a) => state.addons.has(a.key)).map((a) => a[L()]).join("、")}`
+        ? `${T.t("加購", "追加", "Add-ons")}：${ADDONS.filter((a) => state.addons.has(a.key)).map((a) => a[L()]).join("、")}`
         : "",
-      `${T.t("小計", "小計")}：${T.yen(total)}（${T.t("未含市外運費", "市外送料別")}）`,
-      `${T.t("配送地區", "配送エリア")}：${areaName}`,
-      `${T.t("入住日", "入居日")}：${d.moveInDate}　${d.time}`,
-      `${T.t("地址", "住所")}：〒${d.postal} ${fullAddress(d)} ${d.room}`.trim(),
-      d.mapUrl ? `${T.t("地圖", "地図")}：${d.mapUrl}` : "",
-      `${T.t("電梯", "EV")}：${d.elevator}`,
-      `${T.t("姓名", "お名前")}：${d.name}`,
-      `${T.t("聯絡", "連絡先")}：${d.contact}`,
-      d.note ? `${T.t("備註", "備考")}：${d.note}` : "",
+      `${T.t("小計", "小計", "Subtotal")}：${T.yen(total)}（${T.t("未含市外運費", "市外送料別", "excl. out-of-city delivery fee")}）`,
+      `${T.t("配送地區", "配送エリア", "Delivery area")}：${areaName}`,
+      `${T.t("入住日", "入居日", "Move-in date")}：${d.moveInDate}　${d.time}`,
+      `${T.t("地址", "住所", "Address")}：〒${d.postal} ${fullAddress(d)} ${d.room}`.trim(),
+      d.mapUrl ? `${T.t("地圖", "地図", "Map")}：${d.mapUrl}` : "",
+      `${T.t("電梯", "EV", "Elevator")}：${d.elevator}`,
+      `${T.t("姓名", "お名前", "Name")}：${d.name}`,
+      `${T.t("聯絡", "連絡先", "Contact")}：${d.contact}`,
+      d.note ? `${T.t("備註", "備考", "Note")}：${d.note}` : "",
     ].filter(Boolean);
     return "https://line.me/R/oaMessage/" + LINE_OA_BASIC_ID + "/?" + encodeURIComponent(lines.join("\n"));
   }
@@ -584,23 +606,24 @@
     // Customer/delivery info up top (who・when・where) so 客服 can act at a glance;
     // items + total drop to the bottom. null = drop optional line, "" = blank spacer.
     const lines = [
-      T.t("【KUMAGO 線上訂單・已完成付款】", "【KUMAGO オンライン注文・決済完了】"),
+      T.t("【KUMAGO 線上訂單・已完成付款】", "【KUMAGO オンライン注文・決済完了】", "[KUMAGO Online Order – Payment Completed]"),
       "",
-      `${T.t("姓名", "お名前")}：${d.name}`,
-      `${T.t("聯絡", "連絡先")}：${d.contact}`,
-      `${T.t("入住日", "入居日")}：${d.moveInDate}　${d.time}`,
-      `${T.t("配送地區", "配送エリア")}：${areaName}`,
-      `${T.t("地址", "住所")}：〒${d.postal} ${fullAddress(d)} ${d.room}`.trim(),
-      d.mapUrl ? `${T.t("地圖", "地図")}：${d.mapUrl}` : null,
-      `${T.t("電梯", "EV")}：${d.elevator}`,
-      d.note ? `${T.t("備註", "備考")}：${d.note}` : null,
+      `${T.t("姓名", "お名前", "Name")}：${d.name}`,
+      `${T.t("聯絡", "連絡先", "Contact")}：${d.contact}`,
+      `${T.t("入住日", "入居日", "Move-in date")}：${d.moveInDate}　${d.time}`,
+      `${T.t("配送地區", "配送エリア", "Delivery area")}：${areaName}`,
+      `${T.t("地址", "住所", "Address")}：〒${d.postal} ${fullAddress(d)} ${d.room}`.trim(),
+      d.mapUrl ? `${T.t("地圖", "地図", "Map")}：${d.mapUrl}` : null,
+      `${T.t("電梯", "EV", "Elevator")}：${d.elevator}`,
+      d.note ? `${T.t("備註", "備考", "Note")}：${d.note}` : null,
       "",
-      T.t("―― 訂單明細 ――", "―― 注文明細 ――"),
+      T.t("―― 訂單明細 ――", "―― 注文明細 ――", "―― Order Details ――"),
       ...items.map((i) => `・${i.label}　${T.yen(i.amount)}`),
-      `${T.t("總金額", "合計")}：${T.yen(total)}`,
+      `${T.t("總金額", "合計", "Total")}：${T.yen(total)}`,
       "",
       T.t("（已完成線上付款，麻煩協助確認配送日期與時段，謝謝！）",
-          "（オンライン決済が完了しました。配送日時のご確認をお願いいたします。）"),
+          "（オンライン決済が完了しました。配送日時のご確認をお願いいたします。）",
+          "(Payment completed online. Please confirm the delivery date and time. Thank you!)"),
     ].filter((l) => l !== null);
     const msg = lines.join("\n");
     return {
@@ -615,7 +638,7 @@
     const d = collectForm();
     const miss = validate(d);
     if (miss.length) {
-      showError(T.t("還缺：", "未入力：") + miss.join("、"));
+      showError(T.t("還缺：", "未入力：", "Missing: ") + miss.join("、"));
       return;
     }
     showError("");
@@ -628,7 +651,7 @@
     const btn = $("#payBtn");
     const original = btn.textContent;
     btn.disabled = true;
-    btn.textContent = T.t("前往付款頁面…", "決済ページへ…");
+    btn.textContent = T.t("前往付款頁面…", "決済ページへ…", "Redirecting to payment…");
     try {
       const payload = Object.assign({}, d, { address: fullAddress(d) });
       const res = await fetch("/api/create-checkout-session", {
@@ -646,7 +669,8 @@
       btn.textContent = original;
       showError(
         T.t("付款連線失敗，請稍後再試或透過 LINE 與我們聯繫。",
-            "決済の接続に失敗しました。時間をおいて再度お試しいただくか、LINE までご連絡ください。")
+            "決済の接続に失敗しました。時間をおいて再度お試しいただくか、LINE までご連絡ください。",
+            "Payment connection failed. Please try again later or contact us on LINE.")
       );
     }
   }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title data-ja="年間レンタルのお申し込み — KUMAGO">線上訂購年租方案 — KUMAGO 家具家電租賃</title>
+  <title data-ja="年間レンタルのお申し込み — KUMAGO" data-en="Order Your Annual Rental Plan — KUMAGO">線上訂購年租方案 — KUMAGO 家具家電租賃</title>
   <meta name="description" content="KUMAGO 年租方案線上訂購。選擇 A／B／C 套組、租期與加購，填寫配送資訊後線上刷卡付款。大阪市內免費配送、安裝、期滿回收。" />
   <meta name="robots" content="noindex" />
 
@@ -25,18 +25,19 @@
         <img src="assets/kumago-logo-mark.png" alt="KUMAGO" class="brand-mark" />
         <span class="brand-text">
           <span class="brand-name">KUMAGO</span>
-          <span class="brand-sub" data-ja="家具家電レンタル">家具家電租賃</span>
+          <span class="brand-sub" data-ja="家具家電レンタル" data-en="Furniture & Appliance Rental">家具家電租賃</span>
         </span>
       </a>
 
       <nav class="nav" id="nav" aria-label="主要導覽">
-        <a href="index.html#categories" data-ja="レンタル品目">租賃品項</a>
-        <a href="index.html#plans" data-ja="レンタルプラン">租賃方案</a>
-        <a href="index.html#how" data-ja="ご利用の流れ">服務流程</a>
-        <a href="index.html#contact" class="btn btn-primary btn-sm nav-cta" data-ja="LINEで相談">LINE 諮詢</a>
+        <a href="index.html#categories" data-ja="レンタル品目" data-en="Rental Items">租賃品項</a>
+        <a href="index.html#plans" data-ja="レンタルプラン" data-en="Rental Plans">租賃方案</a>
+        <a href="index.html#how" data-ja="ご利用の流れ" data-en="How It Works">服務流程</a>
+        <a href="index.html#contact" class="btn btn-primary btn-sm nav-cta" data-ja="LINEで相談" data-en="Chat on LINE">LINE 諮詢</a>
         <button class="lang-toggle" id="langToggle" type="button" aria-label="切換語言 / 言語切替">
           <span class="lang-opt is-active" data-lang="zh">中</span>
           <span class="lang-opt" data-lang="ja">日</span>
+          <span class="lang-opt" data-lang="en">EN</span>
         </button>
       </nav>
 
@@ -50,13 +51,13 @@
     <div class="container">
       <a href="index.html" class="back-link">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg>
-        <span data-ja="トップに戻る">回首頁</span>
+        <span data-ja="トップに戻る" data-en="Back to Home">回首頁</span>
       </a>
 
       <div class="order-head">
         <p class="eyebrow">Online Order</p>
-        <h1 data-ja="年間レンタルをオンラインで申し込む">線上訂購年租方案</h1>
-        <p data-ja="プラン・期間・追加品をお選びいただき、配送先をご記入のうえオンライン決済まで完了できます。大阪市内は配送・設置・満了後回収まで無料。">
+        <h1 data-ja="年間レンタルをオンラインで申し込む" data-en="Order Your Annual Rental Plan Online">線上訂購年租方案</h1>
+        <p data-ja="プラン・期間・追加品をお選びいただき、配送先をご記入のうえオンライン決済まで完了できます。大阪市内は配送・設置・満了後回収まで無料。" data-en="Choose your set, rental term, and add-ons, then enter your delivery details to complete payment online. Delivery, setup, and end-of-rental pickup are all free within Osaka City.">
           選好方案、租期與加購品項，填寫配送資訊後即可線上完成付款。大阪市內配送、安裝、期滿回收全免費。
         </p>
       </div>
@@ -67,16 +68,16 @@
 
           <!-- Step 1: plan -->
           <section class="step-block">
-            <h2 class="step-title"><span class="step-num">1</span><span data-ja="セットを選ぶ">選擇套組</span></h2>
+            <h2 class="step-title"><span class="step-num">1</span><span data-ja="セットを選ぶ" data-en="Choose a Set">選擇套組</span></h2>
             <div id="planCards"></div>
           </section>
 
           <!-- Step 2: duration -->
           <section class="step-block">
-            <h2 class="step-title"><span class="step-num">2</span><span data-ja="レンタル期間">選擇租期</span></h2>
-            <p class="field-hint" id="durHint" data-ja="まず上でセットをお選びください。">請先在上方選擇套組。</p>
+            <h2 class="step-title"><span class="step-num">2</span><span data-ja="レンタル期間" data-en="Rental Term">選擇租期</span></h2>
+            <p class="field-hint" id="durHint" data-ja="まず上でセットをお選びください。" data-en="Please choose a set above first.">請先在上方選擇套組。</p>
             <div class="dur-grid" id="durMain"></div>
-            <p class="dur-section-label" data-ja="短期プラン（1〜5ヶ月）">短期方案（1–5 個月）</p>
+            <p class="dur-section-label" data-ja="短期プラン（1〜5ヶ月）" data-en="Short-Term Plans (1–5 Months)">短期方案（1–5 個月）</p>
             <div class="dur-grid short" id="durShort"></div>
           </section>
 
@@ -84,64 +85,64 @@
           <section class="step-block">
             <h2 class="step-title">
               <span class="step-num">3</span>
-              <span data-ja="追加レンタル">加購品項</span>
-              <span class="step-sub" data-ja="（任意・複数選択可）">（選填・可複選）</span>
+              <span data-ja="追加レンタル" data-en="Add-on Items">加購品項</span>
+              <span class="step-sub" data-ja="（任意・複数選択可）" data-en="(Optional, multiple selection)">（選填・可複選）</span>
             </h2>
             <div id="addonGrid"></div>
           </section>
 
           <!-- Step 4: delivery -->
           <section class="step-block">
-            <h2 class="step-title"><span class="step-num">4</span><span data-ja="配送情報">配送資訊</span></h2>
+            <h2 class="step-title"><span class="step-num">4</span><span data-ja="配送情報" data-en="Delivery Information">配送資訊</span></h2>
 
             <div class="form-row two">
               <div class="field">
-                <label for="fDate" data-ja="ご希望の入居・配送日">入住／配送日</label>
+                <label for="fDate" data-ja="ご希望の入居・配送日" data-en="Move-in / Delivery Date">入住／配送日</label>
                 <input id="fDate" type="date" required />
               </div>
               <div class="field">
-                <label for="fTime" data-ja="配送時間帯">到貨時段</label>
+                <label for="fTime" data-ja="配送時間帯" data-en="Delivery Time Slot">到貨時段</label>
                 <select id="fTime"><option value="" disabled selected>—</option></select>
               </div>
             </div>
 
             <div class="field">
-              <label for="fPostal" data-ja="郵便番号">郵便番號（郵遞區號）</label>
+              <label for="fPostal" data-ja="郵便番号" data-en="Postal Code">郵便番號（郵遞區號）</label>
               <div class="postal-row">
-                <input id="fPostal" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="8" placeholder="530-0001" data-ja-ph="530-0001" />
-                <button type="button" id="postalBtn" class="btn-postal" data-ja="住所を自動入力">自動帶入地址</button>
+                <input id="fPostal" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="8" placeholder="530-0001" data-ja-ph="530-0001" data-en-ph="530-0001" />
+                <button type="button" id="postalBtn" class="btn-postal" data-ja="住所を自動入力" data-en="Auto-fill Address">自動帶入地址</button>
               </div>
               <p class="field-hint" id="postalHint" hidden></p>
               <p class="ship-zone" id="shipZone" hidden></p>
             </div>
 
             <div class="field">
-              <label for="fAddr1" data-ja="都道府県・市区町村・町名">縣市・區・町名</label>
-              <input id="fAddr1" type="text" placeholder="輸入郵便番號可自動帶入" data-ja-ph="郵便番号で自動入力されます" />
+              <label for="fAddr1" data-ja="都道府県・市区町村・町名" data-en="Prefecture / City / Town">縣市・區・町名</label>
+              <input id="fAddr1" type="text" placeholder="輸入郵便番號可自動帶入" data-ja-ph="郵便番号で自動入力されます" data-en-ph="Auto-filled from postal code" />
             </div>
 
             <div class="form-row two">
               <div class="field">
-                <label for="fBanchi" data-ja="丁目・番地・号">丁目・番地・號</label>
-                <input id="fBanchi" type="text" placeholder="1-2-3" data-ja-ph="1-2-3" />
+                <label for="fBanchi" data-ja="丁目・番地・号" data-en="Block / Lot / House Number">丁目・番地・號</label>
+                <input id="fBanchi" type="text" placeholder="1-2-3" data-ja-ph="1-2-3" data-en-ph="1-2-3" />
               </div>
               <div class="field">
-                <label for="fBuilding" data-ja="建物名">建築物名稱</label>
-                <input id="fBuilding" type="text" placeholder="〇〇マンション（沒有可留空）" data-ja-ph="〇〇マンション（任意）" />
+                <label for="fBuilding" data-ja="建物名" data-en="Building Name">建築物名稱</label>
+                <input id="fBuilding" type="text" placeholder="〇〇マンション（沒有可留空）" data-ja-ph="〇〇マンション（任意）" data-en-ph="e.g. Sakura Mansion (optional)" />
               </div>
             </div>
 
             <div class="form-row two">
               <div class="field">
-                <label for="fRoom" data-ja="部屋番号">房號</label>
-                <input id="fRoom" type="text" placeholder="例：305" data-ja-ph="例：305" />
+                <label for="fRoom" data-ja="部屋番号" data-en="Room Number">房號</label>
+                <input id="fRoom" type="text" placeholder="例：305" data-ja-ph="例：305" data-en-ph="e.g. 305" />
                 <label class="checkbox-line">
                   <input id="fNoRoom" type="checkbox" />
-                  <span data-ja="部屋番号なし（戸建てなど）">無房號（一戶建等）</span>
+                  <span data-ja="部屋番号なし（戸建てなど）" data-en="No room number (detached house, etc.)">無房號（一戶建等）</span>
                 </label>
               </div>
               <div class="field">
-                <label data-ja="エレベーターの有無">是否有電梯</label>
+                <label data-ja="エレベーターの有無" data-en="Elevator">是否有電梯</label>
                 <div class="seg" id="fElevator"></div>
               </div>
             </div>
@@ -149,43 +150,43 @@
             <div class="map-confirm">
               <a id="mapLink" class="btn-map is-disabled" target="_blank" rel="noopener" href="#" aria-disabled="true">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-5.6 7-11a7 7 0 10-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
-                <span data-ja="Googleマップで位置を確認">在 Google 地圖確認位置</span>
+                <span data-ja="Googleマップで位置を確認" data-en="Check Location on Google Maps">在 Google 地圖確認位置</span>
               </a>
-              <p class="map-hint" data-ja="住所を入力すると、下のリンクからGoogleマップで配送先の位置をご確認いただけます。">填入地址後，可點開下方連結，在 Google 地圖確認配送位置是否正確。</p>
+              <p class="map-hint" data-ja="住所を入力すると、下のリンクからGoogleマップで配送先の位置をご確認いただけます。" data-en="Once you enter your address, use the link below to confirm your delivery location on Google Maps.">填入地址後，可點開下方連結，在 Google 地圖確認配送位置是否正確。</p>
 
               <p class="map-url-line" id="mapUrlLine" hidden>
-                <span class="map-url-label" data-ja="マップURL：">地圖網址：</span>
+                <span class="map-url-label" data-ja="マップURL：" data-en="Map URL:">地圖網址：</span>
                 <a id="mapUrlText" class="map-url-text" target="_blank" rel="noopener" href="#"></a>
                 <span class="map-url-ok" id="mapUrlOk" hidden>
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                  <span data-ja="位置を確認しました">位置正確</span>
+                  <span data-ja="位置を確認しました" data-en="Location confirmed">位置正確</span>
                 </span>
               </p>
 
               <div class="map-check" id="mapCheck" hidden>
-                <p class="map-check-q" data-ja="地図に表示された位置は正しいですか？">地圖上顯示的位置正確嗎？</p>
+                <p class="map-check-q" data-ja="地図に表示された位置は正しいですか？" data-en="Is the location shown on the map correct?">地圖上顯示的位置正確嗎？</p>
                 <div class="seg" id="mapConfirmSeg"></div>
               </div>
 
               <div class="field map-custom" id="mapCustomWrap" hidden>
-                <label for="fMapUrl" data-ja="正しい位置の Googleマップ URL">正確位置的 Google 地圖網址</label>
-                <input id="fMapUrl" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/…" data-ja-ph="https://maps.app.goo.gl/…" />
-                <p class="field-hint" data-ja="Googleマップで正しい位置を開き、「共有」ボタンからURLをコピーして貼り付けてください。">請在 Google 地圖上找到正確位置，點「分享」複製網址後貼上。</p>
+                <label for="fMapUrl" data-ja="正しい位置の Googleマップ URL" data-en="Google Maps URL for the correct location">正確位置的 Google 地圖網址</label>
+                <input id="fMapUrl" type="url" inputmode="url" placeholder="https://maps.app.goo.gl/…" data-ja-ph="https://maps.app.goo.gl/…" data-en-ph="https://maps.app.goo.gl/…" />
+                <p class="field-hint" data-ja="Googleマップで正しい位置を開き、「共有」ボタンからURLをコピーして貼り付けてください。" data-en="Open the correct location on Google Maps, tap “Share,” copy the URL, and paste it here.">請在 Google 地圖上找到正確位置，點「分享」複製網址後貼上。</p>
               </div>
             </div>
           </section>
 
           <!-- Step 5: contact -->
           <section class="step-block">
-            <h2 class="step-title"><span class="step-num">5</span><span data-ja="ご連絡先">聯絡資訊</span></h2>
+            <h2 class="step-title"><span class="step-num">5</span><span data-ja="ご連絡先" data-en="Contact Information">聯絡資訊</span></h2>
             <div class="form-row two">
               <div class="field">
-                <label for="fName" data-ja="お名前">姓名</label>
-                <input id="fName" type="text" placeholder="您的姓名" data-ja-ph="お名前" autocomplete="name" />
+                <label for="fName" data-ja="お名前" data-en="Full Name">姓名</label>
+                <input id="fName" type="text" placeholder="您的姓名" data-ja-ph="お名前" data-en-ph="Your name" autocomplete="name" />
               </div>
               <div class="field">
-                <label for="fContact" data-ja="メール または 電話">Email 或電話</label>
-                <input id="fContact" type="text" placeholder="example@gmail.com / 090-1234-5678" data-ja-ph="example@gmail.com / 090-1234-5678" autocomplete="email" />
+                <label for="fContact" data-ja="メール または 電話" data-en="Email or Phone">Email 或電話</label>
+                <input id="fContact" type="text" placeholder="example@gmail.com / 090-1234-5678" data-ja-ph="example@gmail.com / 090-1234-5678" data-en-ph="example@gmail.com / 090-1234-5678" autocomplete="email" />
               </div>
             </div>
           </section>
@@ -194,42 +195,42 @@
           <section class="step-block">
             <h2 class="step-title">
               <span class="step-num">6</span>
-              <span data-ja="備考・ご要望">備註・特殊需求</span>
-              <span class="step-sub" data-ja="（任意）">（選填）</span>
+              <span data-ja="備考・ご要望" data-en="Notes / Special Requests">備註・特殊需求</span>
+              <span class="step-sub" data-ja="（任意）" data-en="(Optional)">（選填）</span>
             </h2>
             <div class="field">
-              <label for="fNote" data-ja="ご要望があればご記入ください">如有特定需求請在此填寫</label>
+              <label for="fNote" data-ja="ご要望があればご記入ください" data-en="Please let us know if you have any requests">如有特定需求請在此填寫</label>
               <textarea id="fNote" rows="4" maxlength="500"
                 placeholder="例：想把微波爐換成吸頂燈（這樣加購就不用再勾選吸頂燈）…"
-                data-ja-ph="例：電子レンジをシーリングライトに交換希望（追加購入は不要）…"></textarea>
-              <p class="field-hint" data-ja="配送・設置に関するご要望など、お気軽にどうぞ（最大500字）">配送、安裝相關的需求都歡迎告訴我們（最多 500 字）</p>
+                data-ja-ph="例：電子レンジをシーリングライトに交換希望（追加購入は不要）…" data-en-ph="e.g. I'd like to swap the microwave for a ceiling light instead (no need to add it as an extra)…"></textarea>
+              <p class="field-hint" data-ja="配送・設置に関するご要望など、お気軽にどうぞ（最大500字）" data-en="Feel free to add any requests about delivery or setup (max 500 characters)">配送、安裝相關的需求都歡迎告訴我們（最多 500 字）</p>
             </div>
           </section>
         </div>
 
         <!-- RIGHT: summary -->
         <aside class="summary-card">
-          <h3 data-ja="ご注文内容">訂單摘要</h3>
+          <h3 data-ja="ご注文内容" data-en="Order Summary">訂單摘要</h3>
           <div class="sum-items" id="sumItems"></div>
           <div class="sum-divider"></div>
           <div class="sum-total">
-            <span class="lbl" data-ja="合計">合計</span>
+            <span class="lbl" data-ja="合計" data-en="Total">合計</span>
             <span class="val" id="sumTotal">¥0</span>
           </div>
 
-          <div class="ship-note" id="shipNote" hidden data-ja="ご入力の郵便番号は配送対象エリア外です。ご希望の場合は LINE までお問い合わせください。">
+          <div class="ship-note" id="shipNote" hidden data-ja="ご入力の郵便番号は配送対象エリア外です。ご希望の場合は LINE までお問い合わせください。" data-en="The postal code you entered is outside our delivery area. Please contact us on LINE if you'd like to proceed.">
             您輸入的郵便番號不在配送範圍內，如有需要請透過 LINE 與我們聯繫。
           </div>
 
-          <button type="button" class="btn-pay" id="payBtn" data-ja="お支払いへ進む">前往付款</button>
+          <button type="button" class="btn-pay" id="payBtn" data-ja="お支払いへ進む" data-en="Proceed to Payment">前往付款</button>
           <div class="form-error" id="formError" hidden></div>
 
           <p class="pay-secure">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
-            <span data-ja="決済は Stripe による安全な暗号化通信で処理されます">付款由 Stripe 加密安全處理</span>
+            <span data-ja="決済は Stripe による安全な暗号化通信で処理されます" data-en="Payments are processed securely and encrypted via Stripe">付款由 Stripe 加密安全處理</span>
           </p>
 
-          <p class="pay-policy" data-ja="ご決済後は、天災など不可抗力を除き、キャンセル・返金はお受けできません。配送日の変更はいつでも承ります 👌">
+          <p class="pay-policy" data-ja="ご決済後は、天災など不可抗力を除き、キャンセル・返金はお受けできません。配送日の変更はいつでも承ります 👌" data-en="Once payment is complete, cancellations and refunds are not available except in cases of force majeure (e.g. natural disasters). You're welcome to change the delivery date at any time 👌">
             提醒您，付款後除天災等不可抗力影響，無法提供取消退費；但調整送貨日期是沒問題的 👌
           </p>
         </aside>
