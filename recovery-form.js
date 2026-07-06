@@ -13,18 +13,8 @@
   }
   const T = (zh, ja) => (L() === "ja" ? ja : zh);
 
-  /* placeholder 中日切換：script.js 只換 textContent，不管 placeholder，這裡補上。 */
-  function applyPlaceholders() {
-    const ja = L() === "ja";
-    document.querySelectorAll("[data-ja-ph]").forEach((el) => {
-      if (el.dataset.zhPhCache === undefined) el.dataset.zhPhCache = el.getAttribute("placeholder") || "";
-      el.setAttribute("placeholder", ja ? el.dataset.jaPh : el.dataset.zhPhCache);
-    });
-  }
-  document.querySelectorAll(".lang-opt").forEach((opt) =>
-    // script.js 也綁了同一顆按鈕；兩個 handler 各做各的，互不干擾。
-    opt.addEventListener("click", applyPlaceholders)
-  );
+  // 語言切換（含 placeholder）統一由 script.js 的 in-place 模式處理
+  // （<html data-i18n="inplace">）。此檔只保留 L()/T() 供動態字串取用。
 
   /* 回收日期不能選過去（以瀏覽器本地日期為準即可，實際時間人工再確認）。 */
   function todayLocalISO() {
