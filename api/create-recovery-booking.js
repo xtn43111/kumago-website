@@ -74,6 +74,9 @@ function normalizeInput(body, now) {
   const slot = String(b.slot || "").trim();
   const note = String(b.note || "").trim().slice(0, MAX.note);
   const lang = b.lang === "ja" ? "ja" : "zh";
+  // LIFF 自動帶入的 LINE 身分（選填）：格式不對就靜默丟棄，不影響預約成立。
+  const lineUserId = /^U[0-9a-f]{32}$/.test(String(b.lineUserId || "")) ? String(b.lineUserId) : "";
+  const lineDisplayName = String(b.lineDisplayName || "").trim().slice(0, 60);
 
   // 先分「沒填」與「填了但不合法」，讓前端能給精準錯誤。
   const missing = [];
@@ -98,7 +101,7 @@ function normalizeInput(body, now) {
   }
   if (invalid.length) return { ok: false, invalid };
 
-  return { ok: true, value: { name, phone, address, date, slot, note, lang } };
+  return { ok: true, value: { name, phone, address, date, slot, note, lang, lineUserId, lineDisplayName } };
 }
 
 /* 允許送單的來源網域（擋瀏覽器端跨站濫用；curl 類可偽造 Origin，故這只是一層）。 */
@@ -153,6 +156,10 @@ function buildRecoveryEvent(v) {
     "🐻 KUMAGO 期滿回收預約（客人自助送出）",
     "",
     `【姓名】${v.name}`,
+    v.lineDisplayName
+      ? `【LINE 名稱】${v.lineDisplayName}`
+      : "⚠️【LINE】未取得——客人可能用一般瀏覽器開啟，聊天室裡可能找不到人",
+    v.lineUserId ? `【LINE userId】${v.lineUserId}` : null,
     `【電話】${v.phone}`,
     `【希望回收】${v.date}　${slotLabel}`,
     `【物品存放地址】${v.address}`,
@@ -164,7 +171,10 @@ function buildRecoveryEvent(v) {
   ].filter((l) => l !== null);
 
   const event = {
-    summary: `${v.name} 期滿回收預約`, // 含「回收」→ 被歸類為 recovery，姓名供比對
+    // 含「回收」→ 被歸類為 recovery，姓名供比對；LINE 名稱直接進標題方便對人。
+    summary: v.lineDisplayName
+      ? `${v.name}（LINE: ${v.lineDisplayName}）期滿回收預約`
+      : `⚠️ ${v.name} 期滿回收預約（無LINE）`,
     location: v.address,
     description: descLines.join("\n"),
     reminders: { useDefault: false, overrides: [] }, // 無彈窗提醒，統一走每日 Telegram
@@ -193,6 +203,9 @@ function buildRecoveryPush(v) {
     "<b>🐻 新回收預約・客人自助</b>",
     "",
     `姓名：${esc(v.name)}`,
+    v.lineDisplayName
+      ? `LINE：${esc(v.lineDisplayName)}`
+      : "⚠️ 未取得 LINE 名稱（客人可能不在 LINE 內開啟，聊天室恐找不到人）",
     `電話：${esc(v.phone)}`,
     `希望回收：${esc(v.date)}　${esc(slotLabel)}`,
     `存放地址：${esc(v.address)}`,
@@ -250,7 +263,12 @@ module.exports = async function handler(req, res) {
   try {
     cal = await insertEvent(event, eventId);
     if (cal && cal.duplicate) {
-      await patchEvent(eventId, { location: event.location, description: event.description });
+      // 重送也同步標題：第一次沒帶 LINE 資訊、第二次從 LINE 內重送時能補上。
+      await patchEvent(eventId, {
+        summary: event.summary,
+        location: event.location,
+        description: event.description,
+      });
     }
   } catch (e) {
     console.error("create-recovery-booking: insertEvent failed:", e);

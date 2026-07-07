@@ -148,7 +148,9 @@
         <p data-ja="担当者が確認のうえ、LINEにて回収日程をご連絡いたします。物品の現況写真は、LINEのトークからお送りいただけますようお願いいたします。" data-en="Our team will confirm and contact you via LINE with the pickup schedule. Please also send photos of the current condition of the items via LINE chat.">
           我們已收到，會確認後透過 LINE 與您聯繫回收日程。也請記得把物品現況照片，在 LINE 對話中傳給我們。
         </p>
-        <a class="btn-line-add" href="https://line.me/R/oaMessage/@967bmevi/?%E6%88%91%E5%89%9B%E9%80%81%E5%87%BA%E4%BA%86%E5%9B%9E%E6%94%B6%E9%A0%90%E7%B4%84%EF%BC%8C%E9%80%99%E6%98%AF%E7%89%A9%E5%93%81%E7%8F%BE%E6%B3%81%E7%85%A7%E7%89%87" target="_blank" rel="noopener">
+        <!-- 送出後由 recovery-form.js 填字：自動代發成功=綠勾提示；否則=必須手動傳送警示 -->
+        <p class="done-line-status" id="doneLineStatus" hidden></p>
+        <a class="btn-line-add" id="doneLineBtn" href="https://line.me/R/oaMessage/@967bmevi/?%E6%88%91%E5%89%9B%E9%80%81%E5%87%BA%E4%BA%86%E5%9B%9E%E6%94%B6%E9%A0%90%E7%B4%84%EF%BC%8C%E9%80%99%E6%98%AF%E7%89%A9%E5%93%81%E7%8F%BE%E6%B3%81%E7%85%A7%E7%89%87" target="_blank" rel="noopener">
           <span data-ja="LINEで現況写真を送る" data-en="Send Photos on LINE">在 LINE 傳送現況照片</span>
         </a>
         <a href="index.html" class="done-home" data-ja="トップに戻る" data-en="Back to Home">回首頁</a>
@@ -163,6 +165,7 @@
   </footer>
 
   <script src="script.js"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="recovery-form.js"></script>
 </body>
 </html>

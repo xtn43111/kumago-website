@@ -74,3 +74,21 @@
   .recovery-form { padding: 18px 15px 22px; }
   .photo-remind { padding: 14px 15px; gap: 11px; }
 }
+
+/* 成功頁 LINE 傳送狀態（recovery-form.js 動態填字）：
+   預設綠底提示；.is-warn = 未自動代發、必須手動傳送。 */
+.done-line-status {
+  max-width: 460px;
+  margin: 0 auto 18px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(6,199,85,.1);
+  color: #0a7a3c;
+  font-size: .92rem;
+  font-weight: 600;
+  line-height: 1.7;
+}
+.done-line-status.is-warn {
+  background: rgba(255,166,0,.14);
+  color: #9a5b00;
+}

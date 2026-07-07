@@ -6,6 +6,27 @@
 
   const $ = (s) => document.querySelector(s);
 
+  /* ---- LIFF：LINE 內開啟時自動取得客人身分 ----
+   * LIFF_ID 由 LINE Developers console（LINE Login channel > LIFF）取得；
+   * 留空 = 停用，頁面退回一般瀏覽器模式（成功頁請客人手動把預約內容傳到 LINE）。 */
+  const LIFF_ID = ""; // TODO: 建好 LIFF app 後填入（形如 "2001234567-AbcdEfgh"）
+  const OA_MSG_URL = "https://line.me/R/oaMessage/@967bmevi/?";
+  let lineProfile = null; // { userId, displayName }；取不到維持 null
+
+  async function initLiff() {
+    if (!LIFF_ID || !window.liff) return;
+    try {
+      await liff.init({ liffId: LIFF_ID });
+      if (liff.isLoggedIn()) {
+        const p = await liff.getProfile();
+        lineProfile = { userId: p.userId, displayName: p.displayName };
+      }
+    } catch (e) {
+      // LIFF 掛掉不影響表單本體（localhost、外部瀏覽器都會走到這）。
+      console.warn("liff init failed:", e);
+    }
+  }
+
   /* 目前語言：讀 header 上 active 的 .lang-opt（script.js 維護）。 */
   function L() {
     const active = document.querySelector(".lang-opt.is-active");
@@ -49,7 +70,78 @@
       slot: $("#fSlot").value,
       note: $("#fNote").value.trim(),
       lang: L(),
+      lineUserId: lineProfile ? lineProfile.userId : "",
+      lineDisplayName: lineProfile ? lineProfile.displayName : "",
     };
+  }
+
+  /* 時段 key → 各語顯示標籤（組 LINE 訊息用；與 recovery.html option 文字一致）。 */
+  const SLOT_TEXT = {
+    "09-1130": { zh: "上午 09:00–11:30", ja: "午前 09:00〜11:30", en: "Morning 09:00–11:30" },
+    "1230-16": { zh: "下午 12:30–16:00", ja: "午後 12:30〜16:00", en: "Afternoon 12:30–16:00" },
+    any: { zh: "整天皆可", ja: "終日OK", en: "Any time" },
+  };
+
+  /* 預約內容 → 一段可貼進 LINE 的文字（自動代發與手動預填共用）。 */
+  function bookingMessage(d) {
+    const slot = (SLOT_TEXT[d.slot] || {})[L()] || d.slot;
+    return [
+      T("【期滿回收預約】", "【満了回収予約】", "[End-of-Rental Pickup Booking]"),
+      T("姓名：", "お名前：", "Name: ") + d.name,
+      T("電話：", "電話番号：", "Phone: ") + d.phone,
+      T("希望回收：", "回収希望：", "Preferred: ") + d.date + "　" + slot,
+      T("存放地址：", "保管先住所：", "Address: ") + d.address,
+      d.note ? T("備註：", "備考：", "Note: ") + d.note : null,
+      T("（物品現況照片接著傳送）", "（現況写真はこのあと送ります）", "(Photos of current condition to follow)"),
+    ].filter(Boolean).join("\n");
+  }
+
+  /* 預約內容進 LINE：LIFF 內以客人身分自動代發（聊天串因此必定建立、後台一定
+   * 找得到人）；非 LINE 內或代發失敗 → 成功頁改成「必須手動傳送」模式。 */
+  async function sendToLine(d) {
+    const msg = bookingMessage(d);
+    let autoSent = false;
+    if (lineProfile && window.liff && liff.isInClient()) {
+      try {
+        await liff.sendMessages([{ type: "text", text: msg }]);
+        autoSent = true;
+      } catch (e) {
+        console.warn("liff sendMessages failed:", e);
+      }
+    }
+    const status = $("#doneLineStatus");
+    const btn = $("#doneLineBtn");
+    if (autoSent) {
+      if (status) {
+        status.hidden = false;
+        status.textContent = T(
+          "✅ 預約內容已自動傳送到 LINE 聊天室，接著請傳物品現況照片。",
+          "✅ 予約内容はLINEトークに自動送信されました。続けて現況写真をお送りください。",
+          "✅ Your booking details were sent to the LINE chat automatically. Please follow up with photos."
+        );
+      }
+      return; // 按鈕維持預設「傳現況照片」
+    }
+    if (status) {
+      status.hidden = false;
+      status.classList.add("is-warn");
+      status.textContent = T(
+        "⚠️ 請務必點下方按鈕，把預約內容傳送到 LINE——我們收到訊息才算完成預約。",
+        "⚠️ 必ず下のボタンから予約内容をLINEでお送りください。メッセージ受信をもって予約完了となります。",
+        "⚠️ Please tap the button below to send your booking details on LINE — the booking is only complete once we receive your message."
+      );
+    }
+    if (btn) {
+      btn.href = OA_MSG_URL + encodeURIComponent(msg);
+      const span = btn.querySelector("span");
+      if (span) {
+        span.textContent = T(
+          "傳送預約內容到 LINE（必須）",
+          "予約内容をLINEで送信（必須）",
+          "Send Booking Details on LINE (Required)"
+        );
+      }
+    }
   }
 
   function validate(d) {
@@ -83,7 +175,8 @@
       });
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error((json && json.error) || "submit_failed");
-      // 成功：收起表單，顯示感謝畫面。
+      // 成功：預約內容送進 LINE（自動或改手動模式），再切感謝畫面。
+      await sendToLine(d);
       $("#recoveryForm").hidden = true;
       $("#recoveryDone").hidden = false;
       $("#recoveryDone").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -99,6 +192,7 @@
   }
 
   function init() {
+    initLiff(); // 非同步暖身；送出前有拿到 profile 就帶上，沒有也不擋
     const dateEl = $("#fDate");
     if (dateEl) dateEl.min = todayLocalISO();
     // submit 事件統一接手：按鈕（type=submit）點擊與文字欄按 Enter 都走這裡。

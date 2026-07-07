@@ -98,6 +98,32 @@ async function run(method, body) {
     assert.strictEqual(r.ok, true);
   });
 
+  // --- LIFF 帶入的 LINE 身分（選填、壞值靜默丟棄） ---
+  ok("合法 lineUserId + displayName → 進 value", () => {
+    const r = normalizeInput({ name: "A", phone: "09012345678", address: "大阪", date: "2026-08-01", slot: "any", lineUserId: "U" + "a".repeat(32), lineDisplayName: " 小熊 " }, NOW);
+    assert.strictEqual(r.ok, true);
+    assert.strictEqual(r.value.lineUserId, "U" + "a".repeat(32));
+    assert.strictEqual(r.value.lineDisplayName, "小熊");
+  });
+  ok("壞 lineUserId → 丟棄但預約仍成立", () => {
+    const r = normalizeInput({ name: "A", phone: "09012345678", address: "大阪", date: "2026-08-01", slot: "any", lineUserId: "not-a-userid" }, NOW);
+    assert.strictEqual(r.ok, true);
+    assert.strictEqual(r.value.lineUserId, "");
+  });
+  ok("有 LINE 名稱 → 標題含（LINE: …）、說明含 userId", () => {
+    const { event } = buildRecoveryEvent({ name: "王小明", phone: "090", address: "x", date: "2026-08-01", slot: "any", note: "", lineUserId: "U" + "b".repeat(32), lineDisplayName: "小熊" });
+    assert.ok(event.summary.includes("回收"));
+    assert.ok(event.summary.includes("（LINE: 小熊）"));
+    assert.ok(event.description.includes("U" + "b".repeat(32)));
+  });
+  ok("無 LINE 資訊 → 標題帶 ⚠️（無LINE），仍含回收+姓名", () => {
+    const { event } = buildRecoveryEvent({ name: "王小明", phone: "090", address: "x", date: "2026-08-01", slot: "any", note: "" });
+    assert.ok(event.summary.startsWith("⚠️"));
+    assert.ok(event.summary.includes("（無LINE）"));
+    assert.ok(event.summary.includes("回收") && event.summary.includes("王小明"));
+    assert.ok(event.description.includes("未取得"));
+  });
+
   // --- pure: buildRecoveryEvent ---
   ok("事件標題含「回收」且含姓名", () => {
     const { event } = buildRecoveryEvent({ name: "王小明", phone: "090", address: "大阪市北区", date: "2026-08-01", slot: "09-1130", note: "" });
