@@ -9,7 +9,7 @@
   /* ---- LIFF：LINE 內開啟時自動取得客人身分 ----
    * LIFF_ID 由 LINE Developers console（LINE Login channel > LIFF）取得；
    * 留空 = 停用，頁面退回一般瀏覽器模式（成功頁請客人手動把預約內容傳到 LINE）。 */
-  const LIFF_ID = ""; // TODO: 建好 LIFF app 後填入（形如 "2001234567-AbcdEfgh"）
+  const LIFF_ID = "2010643698-93v93r0n"; // LINE Login channel > LIFF「期滿回收預約」
   const OA_MSG_URL = "https://line.me/R/oaMessage/@967bmevi/?";
   let lineProfile = null; // { userId, displayName }；取不到維持 null
 

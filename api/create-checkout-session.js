@@ -142,7 +142,8 @@ module.exports = async function handler(req, res) {
 
   const { plan, duration, addons = [], area, moveInDate, time,
           address, postal, building, mapUrl, shipPref, shipCity,
-          room, noRoom, elevator, name, contact, note, lang } = body;
+          room, noRoom, elevator, name, contact, note, lang,
+          lineUserId, lineDisplayName } = body;
 
   // ---- validate core selection ----
   if (!PLAN_PRICES[plan] || !PLAN_PRICES[plan][duration]) {
@@ -235,6 +236,9 @@ module.exports = async function handler(req, res) {
     elevator,
     customer_name: name,
     customer_contact: contact,
+    // LIFF 自動帶入的 LINE 身分（選填；壞值靜默丟棄，不影響下單）
+    line_display_name: String(lineDisplayName || "").trim().slice(0, 60),
+    line_user_id: /^U[0-9a-f]{32}$/.test(String(lineUserId || "")) ? String(lineUserId) : "",
     note: note || "",
     lang: lang || "zh",
   };

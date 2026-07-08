@@ -10,6 +10,26 @@
      ▼ 換成實際的 LINE 官方帳號 Basic ID（含 @）。 */
   const LINE_OA_BASIC_ID = "@967bmevi"; // KUMAGO 官方帳號（lin.ee/z3yASqK）
 
+  /* =================== LIFF（LINE 內開啟時自動取得客人身分） ===================
+     身分（userId＋顯示名）跟著訂單進 Stripe metadata → 行事曆事件標題標
+     （LINE: 名稱），聊天列表一眼對到人。非 LINE 內開啟取不到 → 靜默跳過，
+     由成功頁的「加官方 LINE＋傳訂單」流程補救。 */
+  const LIFF_ID = "2010643698-93v93r0n";
+  let lineProfile = null; // { userId, displayName }；取得失敗維持 null
+
+  async function initLiff() {
+    if (!LIFF_ID || !window.liff) return;
+    try {
+      await liff.init({ liffId: LIFF_ID });
+      if (liff.isLoggedIn()) {
+        const p = await liff.getProfile();
+        lineProfile = { userId: p.userId, displayName: p.displayName };
+      }
+    } catch (e) {
+      console.warn("liff init failed:", e);
+    }
+  }
+
   /* =================== DATA =================== */
   // 期別價格完全對齊 plan_data.PLANS
   const PLANS = {
@@ -543,6 +563,8 @@
       mapConfirm: state.mapConfirm || "",
       mapCorrected: state.mapConfirm === "incorrect" && !!customMapUrl(),
       lang: L(),
+      lineUserId: lineProfile ? lineProfile.userId : "",
+      lineDisplayName: lineProfile ? lineProfile.displayName : "",
     };
   }
 
@@ -687,6 +709,7 @@
 
   /* =================== INIT =================== */
   function init() {
+    initLiff(); // 非同步暖身；送出前有拿到 profile 就帶上，沒有也不擋
     renderPlans();
     renderDurations();
     renderAddons();

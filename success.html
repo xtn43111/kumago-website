@@ -56,6 +56,7 @@
   </style>
 </head>
 <body>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <main class="thanks-wrap">
     <div class="container">
       <div class="thanks-card">
@@ -81,6 +82,10 @@
           <p class="line-sub" data-ja="追加済みの方はそのまま次へ。" id="addFriendSub">已經是好友的話，直接進行下一步即可。</p>
 
           <div class="line-row"><span class="line-num">2</span><span data-ja="ご注文内容を客服へ送信" id="step2Label">把訂單詳細傳給客服</span></div>
+          <!-- LINE 內開啟時由 LIFF 自動代發訂單內容，成功後顯示此列並收起手動傳送鈕 -->
+          <p id="autoSentNote" hidden style="background:#f0faf0;color:#0a7a3c;font-weight:700;border-radius:12px;padding:12px 16px;margin:0 0 12px;"
+             data-ja="✅ ご注文内容はLINEトークに自動送信されました。手動での送信は不要です。">
+            ✅ 訂單內容已自動傳送到 LINE 聊天室，無需再手動傳送。</p>
           <div class="order-box" id="orderBox" hidden></div>
           <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
             <button type="button" class="copy-btn" id="copyBtn" hidden data-ja="注文内容をコピー">複製訂單內容</button>
@@ -139,6 +144,20 @@
 
         // Single-use: clear so a later visit to /success won't resurface this order.
         try { localStorage.removeItem(KEY); } catch (e) {}
+
+        // LIFF：LINE 內開啟時，以客人身分自動把訂單內容發進聊天室（聊天串
+        // 因此必定建立，客服一定找得到人）。失敗就維持原本的手動傳送流程。
+        var LIFF_ID = "2010643698-93v93r0n";
+        if (window.liff) {
+          liff.init({ liffId: LIFF_ID }).then(function () {
+            if (!liff.isInClient()) return;
+            return liff.sendMessages([{ type: "text", text: stash.msg }]).then(function () {
+              document.getElementById("autoSentNote").hidden = false;
+              document.getElementById("sendOrderBtn").hidden = true;
+              document.getElementById("copyBtn").hidden = true;
+            });
+          }).catch(function (e) { console.warn("liff:", e); });
+        }
       }
     })();
   </script>
