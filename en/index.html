@@ -4,14 +4,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script>
     /* LIFF 子路徑轉跳：LIFF endpoint 設在根目錄，liff.line.me/<id>/recovery
-       之類的連結會落在首頁並帶 ?liff.state=/recovery——這裡立刻轉跳過去，
-       否則客人會停在首頁（2026-07-10 實際發生）。只接受站內路徑，防 open redirect。 */
+       之類的連結會落在首頁並帶 ?liff.state=/recovery。正規做法＝首頁跑
+       liff.init()，SDK 會先處理登入憑證再自動二次轉跳到目標頁。
+       （裸 location.replace 會丟掉登入參數造成無限重複登入——2026-07-10 實測踩過）
+       只在帶 liff.state 時才載 SDK，一般訪客零成本。 */
     (function () {
-      var m = location.search.match(/[?&]liff\.state=([^&]+)/);
-      if (!m) return;
-      var p = "";
-      try { p = decodeURIComponent(m[1]); } catch (e) { return; }
-      if (p.charAt(0) === "/" && p.charAt(1) !== "/") location.replace(p);
+      if (!/[?&]liff\.state=/.test(location.search)) return;
+      function manualJump() { // SDK 載入失敗的保底：至少把人送到目標頁
+        var m = location.search.match(/[?&]liff\.state=([^&]+)/);
+        if (!m) return;
+        try {
+          var p = decodeURIComponent(m[1]);
+          if (p.charAt(0) === "/" && p.charAt(1) !== "/") location.replace(p);
+        } catch (e) {}
+      }
+      var s = document.createElement("script");
+      s.src = "https://static.line-scdn.net/liff/edge/2/sdk.js";
+      s.onload = function () {
+        liff.init({ liffId: "2010643698-93v93r0n" }).catch(function (e) {
+          console.warn("liff init failed:", e);
+          manualJump();
+        });
+      };
+      s.onerror = manualJump;
+      document.head.appendChild(s);
     })();
   </script>
   <title>KUMAGO Furniture &amp; Appliance Rental — Your Home in Osaka</title>
