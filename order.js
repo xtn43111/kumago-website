@@ -16,11 +16,14 @@
      由成功頁的「加官方 LINE＋傳訂單」流程補救。 */
   const LIFF_ID = "2010643698-93v93r0n";
   let lineProfile = null; // { userId, displayName }；取得失敗維持 null
+  let liffReady = false;      // liff.init 成功（LINE 內或外部瀏覽器皆可）
+  let loginAttempted = false; // 本次流程已試過 liff.login，只試一次、失敗不擋付款
 
   async function initLiff() {
     if (!LIFF_ID || !window.liff) return;
     try {
       await liff.init({ liffId: LIFF_ID });
+      liffReady = true;
       if (liff.isLoggedIn()) {
         const p = await liff.getProfile();
         lineProfile = { userId: p.userId, displayName: p.displayName };
@@ -28,6 +31,107 @@
     } catch (e) {
       console.warn("liff init failed:", e);
     }
+    renderLineBadge();
+  }
+
+  /* LINE 連結狀態標示（付款鈕上方）。外部瀏覽器一開始未連結，
+     付款時會走 liff.login 補連結，這裡讓客人知道現在的狀態。 */
+  function renderLineBadge() {
+    const btn = $("#payBtn");
+    if (!btn || !btn.parentNode) return;
+    if (!liffReady && !lineProfile) return; // LIFF 不可用（如本機測試）就不顯示，避免誤導
+    let el = document.getElementById("lineBadge");
+    if (!el) {
+      el = document.createElement("p");
+      el.id = "lineBadge";
+      el.style.cssText =
+        "font-size:13px;line-height:1.5;margin:0 0 10px;padding:8px 12px;border-radius:8px;";
+      btn.parentNode.insertBefore(el, btn);
+    }
+    if (lineProfile) {
+      el.style.background = "rgba(6,199,85,.14)";
+      el.style.color = "#06713d";
+      el.textContent = T.t(
+        `✅ 已連結 LINE：${lineProfile.displayName}（訂單會自動對應您的 LINE，配送聯絡不漏接）`,
+        `✅ LINE 連携済み：${lineProfile.displayName}（ご注文が LINE アカウントに自動でひも付きます）`,
+        `✅ LINE linked: ${lineProfile.displayName} (your order will be matched to your LINE account)`
+      );
+    } else {
+      el.style.background = "rgba(128,128,128,.12)";
+      el.style.color = "inherit";
+      el.textContent = T.t(
+        "尚未連結 LINE：按「前往付款」時會請您用 LINE 登入，配送日確認都透過 LINE 進行",
+        "LINE 未連携：お支払いに進む際に LINE ログインをお願いします（配送日の確認は LINE で行います）",
+        "LINE not linked yet: you'll be asked to log in with LINE when proceeding to payment (delivery is coordinated via LINE)"
+      );
+    }
+  }
+
+  /* =================== LINE 登入前的表單草稿 ===================
+     liff.login() 是整頁跳轉，回來後表單會清空——所以登入前把所有輸入
+     存進 localStorage，登入回來自動還原並續跑付款。單次使用、30 分鐘過期。 */
+  const DRAFT_KEY = "kumago_order_draft";
+
+  function saveDraft() {
+    const draft = {
+      plan: state.plan,
+      duration: state.duration,
+      addons: Array.from(state.addons),
+      shipPref: state.shipPref,
+      shipCity: state.shipCity,
+      fields: {
+        date: $("#fDate").value, time: $("#fTime").value,
+        postal: $("#fPostal").value, addr1: $("#fAddr1").value,
+        banchi: $("#fBanchi").value, building: $("#fBuilding").value,
+        room: $("#fRoom").value, noRoom: $("#fNoRoom").checked,
+        elevator: $("#fElevator").dataset.value || "",
+        name: $("#fName").value, contact: $("#fContact").value,
+        note: $("#fNote").value, mapUrl: $("#fMapUrl") ? $("#fMapUrl").value : "",
+      },
+      loginAttempted: true,
+      pendingCheckout: true,
+      ts: Date.now(),
+    };
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) {}
+  }
+
+  /* 讀出並清掉草稿；有效就套回表單與 state，回傳草稿物件（無效回 null）。 */
+  function consumeDraft() {
+    let draft = null;
+    try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch (e) {}
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+    if (!draft || !draft.fields) return null;
+    if (!draft.ts || Date.now() - draft.ts > 30 * 60 * 1000) return null; // 過期不還原
+
+    state.plan = draft.plan || null;
+    state.duration = draft.duration || null;
+    state.addons = new Set(draft.addons || []);
+    state.shipPref = draft.shipPref || "";
+    state.shipCity = draft.shipCity || "";
+    state.ship = state.shipPref ? shippingFor(state.shipPref, state.shipCity) : null;
+
+    const f = draft.fields;
+    $("#fDate").value = f.date || "";
+    $("#fTime").value = f.time || "";
+    $("#fPostal").value = f.postal || "";
+    $("#fAddr1").value = f.addr1 || "";
+    $("#fBanchi").value = f.banchi || "";
+    $("#fBuilding").value = f.building || "";
+    $("#fNoRoom").checked = !!f.noRoom;
+    $("#fRoom").value = f.noRoom ? "" : (f.room || "");
+    $("#fRoom").disabled = !!f.noRoom;
+    $("#fElevator").dataset.value = f.elevator || "";
+    $("#fName").value = f.name || "";
+    $("#fContact").value = f.contact || "";
+    $("#fNote").value = f.note || "";
+    if ($("#fMapUrl")) $("#fMapUrl").value = f.mapUrl || "";
+
+    renderPlans();
+    renderDurations();
+    renderAddons();
+    renderElevator();
+    renderShipZone();
+    return draft;
   }
 
   /* =================== DATA =================== */
@@ -680,6 +784,19 @@
       return;
     }
 
+    // 外部瀏覽器且尚未連結 LINE：先存草稿、導 LINE 登入，回來自動續跑付款。
+    // 只試一次（loginAttempted），登入失敗或被取消不擋付款——寧可少身分不可掉單。
+    if (!lineProfile && liffReady && !loginAttempted && !liff.isLoggedIn()) {
+      loginAttempted = true;
+      saveDraft();
+      try {
+        liff.login({ redirectUri: location.href });
+        return; // 整頁即將導向 LINE 登入
+      } catch (e) {
+        console.warn("liff login failed:", e);
+      }
+    }
+
     const btn = $("#payBtn");
     const original = btn.textContent;
     btn.disabled = true;
@@ -709,7 +826,6 @@
 
   /* =================== INIT =================== */
   function init() {
-    initLiff(); // 非同步暖身；送出前有拿到 profile 就帶上，沒有也不擋
     renderPlans();
     renderDurations();
     renderAddons();
@@ -725,6 +841,13 @@
       renderPlans();
       renderDurations();
     }
+
+    // LINE 登入跳轉回來：還原草稿，等 LIFF 拿到身分後自動續跑付款
+    const draft = consumeDraft();
+    if (draft) loginAttempted = !!draft.loginAttempted;
+    initLiff().then(() => {
+      if (draft && draft.pendingCheckout && lineProfile) onSubmit();
+    });
 
     $("#fTime").addEventListener("change", recalc);
     $("#fNoRoom").addEventListener("change", (e) => {
@@ -766,6 +889,7 @@
       renderShipZone();
       renderElevator();
       renderMapConfirm();
+      renderLineBadge();
       recalc();
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
 
