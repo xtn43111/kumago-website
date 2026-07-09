@@ -234,6 +234,35 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, hint: "help" });
   }
 
+  // 補配對：掃行事曆「⚠️（無LINE）」事件並補 LINE 名稱。客人身分資料
+  // （qa.db、LINE profile）在本機 Mac，所以轉發給 line-smart-cs（走
+  // Cloudflare tunnel），本機在背景配對完成後自行推報告回 Telegram。
+  // 「配 N U代碼前8碼」= 多候選時手動指定第 N 筆事件的客人。
+  const pairScan = /^\/?補配對$/.test(text.trim());
+  const pairAssign = text.trim().match(/^\/?配\s+(\d+)\s+(U\w+)$/i);
+  if (pairScan || pairAssign) {
+    const base = process.env.KUMALINE_BASE_URL || "https://kumaline.7-mori.com";
+    const path = pairScan ? "/pair/scan" : "/pair/assign";
+    const payload = pairScan ? {} : { idx: Number(pairAssign[1]), cid_prefix: pairAssign[2] };
+    try {
+      const r = await fetch(base + path, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.CRON_SECRET || ""}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) throw new Error(`local ${r.status}`);
+      await safeReply(chatId, pairScan
+        ? "🔍 掃描已啟動，配對報告稍後送達…"
+        : "🔗 指定配對已送出，結果稍後送達…", true);
+    } catch (e) {
+      await safeReply(chatId, `⚠️ 連不上本機配對服務（Mac 可能睡眠中）：${e.message}`, true);
+    }
+    return res.status(200).json({ ok: true, pair: true });
+  }
+
   // Photo UPDATE: "更新照片：7/5 庭綺" + attached photo(s) → replace the 🖼 照片
   // link on that EXISTING event (no new event). Single photo → /api/tg-photo;
   // album → /api/tg-gallery, later photos of the same album appended via the
