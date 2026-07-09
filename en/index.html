@@ -2,6 +2,18 @@
 <html lang="en"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    /* LIFF 子路徑轉跳：LIFF endpoint 設在根目錄，liff.line.me/<id>/recovery
+       之類的連結會落在首頁並帶 ?liff.state=/recovery——這裡立刻轉跳過去，
+       否則客人會停在首頁（2026-07-10 實際發生）。只接受站內路徑，防 open redirect。 */
+    (function () {
+      var m = location.search.match(/[?&]liff\.state=([^&]+)/);
+      if (!m) return;
+      var p = "";
+      try { p = decodeURIComponent(m[1]); } catch (e) { return; }
+      if (p.charAt(0) === "/" && p.charAt(1) !== "/") location.replace(p);
+    })();
+  </script>
   <title>KUMAGO Furniture &amp; Appliance Rental — Your Home in Osaka</title>
   <meta name="description" content="KUMAGO Furniture &amp; Appliance Rental in Osaka — sets from ¥45,100/yr with free delivery, setup, and end-of-term collection within Osaka City. 1,000+ customers, 200+ Google reviews.">
 

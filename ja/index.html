@@ -2,6 +2,18 @@
 <html lang="ja"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    /* LIFF 子路徑轉跳：LIFF endpoint 設在根目錄，liff.line.me/<id>/recovery
+       之類的連結會落在首頁並帶 ?liff.state=/recovery——這裡立刻轉跳過去，
+       否則客人會停在首頁（2026-07-10 實際發生）。只接受站內路徑，防 open redirect。 */
+    (function () {
+      var m = location.search.match(/[?&]liff\.state=([^&]+)/);
+      if (!m) return;
+      var p = "";
+      try { p = decodeURIComponent(m[1]); } catch (e) { return; }
+      if (p.charAt(0) === "/" && p.charAt(1) !== "/") location.replace(p);
+    })();
+  </script>
   <title>KUMAGO 家具家電レンタル — 大阪の暮らしをすぐ快適に</title>
   <meta name="description" content="KUMAGO 家具家電レンタル｜ワーホリ・留学・お仕事で大阪へ来る方に。セット1年 ¥45,100〜、大阪市内は配送・設置・満了後の回収無料。ご利用1,000名超・クチコミ200件超。">
 
