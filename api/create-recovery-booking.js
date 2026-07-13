@@ -171,9 +171,9 @@ function buildRecoveryEvent(v) {
   ].filter((l) => l !== null);
 
   const event = {
-    // 含「回收」→ 被歸類為 recovery，姓名供比對；LINE 名稱直接進標題方便對人。
+    // 含「回收」→ 被歸類為 recovery，姓名供比對；LINE 顯示名直接進括號方便對人。
     summary: v.lineDisplayName
-      ? `${v.name}（LINE: ${v.lineDisplayName}）期滿回收預約`
+      ? `${v.name}（${v.lineDisplayName}）期滿回收預約`
       : `⚠️ ${v.name} 期滿回收預約（無LINE）`,
     location: v.address,
     description: descLines.join("\n"),

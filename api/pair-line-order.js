@@ -64,14 +64,15 @@ function dayWindow(dateStr) {
   return { timeMin: min.toISOString(), timeMax: max.toISOString() };
 }
 
-/* ⚠️ 標題 → 配對後標題。兩種既有格式各有正典寫法（回收的（LINE:）要放
- * 名字後面，防漏報表 lib/recovery.js 的姓名比對才對得上）：
- *   ⚠️ 名字 期滿回收預約（無LINE）   → 名字（LINE: 顯示名）期滿回收預約
- *   ⚠️ 名字（無LINE） 入住配送 方案  → 名字（LINE: 顯示名） 入住配送 方案 */
+/* ⚠️ 標題 → 配對後標題。括號內直接寫 LINE 顯示名（不加 LINE: 前綴）。
+ * 兩種既有格式各有正典寫法（回收的括號要放名字後面，
+ * 防漏報表 lib/recovery.js 的姓名比對才對得上）：
+ *   ⚠️ 名字 期滿回收預約（無LINE）   → 名字（顯示名）期滿回收預約
+ *   ⚠️ 名字（無LINE） 入住配送 方案  → 名字（顯示名） 入住配送 方案 */
 function pairedSummary(summary, displayName) {
   const rec = summary.match(/^⚠️\s*(.+?)\s*期滿回收預約（無LINE）\s*$/);
-  if (rec) return `${rec[1]}（LINE: ${displayName}）期滿回收預約`;
-  return summary.replace(/^⚠️\s*/, "").replace("（無LINE）", `（LINE: ${displayName}）`);
+  if (rec) return `${rec[1]}（${displayName}）期滿回收預約`;
+  return summary.replace(/^⚠️\s*/, "").replace("（無LINE）", `（${displayName}）`);
 }
 
 async function pairEvent(target, userId, displayName, via) {
@@ -162,17 +163,16 @@ module.exports = async function handler(req, res) {
   const w = dayWindow(parsed.date);
   const events = await listEvents(w.timeMin, w.timeMax);
 
-  // 只認「（無LINE）」且含該姓名的事件；已寫 LINE: 的不重複配對
+  // 只認「（無LINE）」且含該姓名的事件；沒有（無LINE）標記 = 已配對，不重複配
   const target = events.find(
     (ev) =>
       ev.summary &&
       ev.summary.includes("（無LINE）") &&
-      ev.summary.includes(parsed.name) &&
-      !ev.summary.includes("LINE:")
+      ev.summary.includes(parsed.name)
   );
   if (!target) {
     const already = events.some(
-      (ev) => ev.summary && ev.summary.includes(parsed.name) && ev.summary.includes("LINE:")
+      (ev) => ev.summary && ev.summary.includes(parsed.name) && !ev.summary.includes("（無LINE）")
     );
     return res.status(200).json({
       ok: true, matched: false,

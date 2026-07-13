@@ -110,10 +110,10 @@ async function run(method, body) {
     assert.strictEqual(r.ok, true);
     assert.strictEqual(r.value.lineUserId, "");
   });
-  ok("有 LINE 名稱 → 標題含（LINE: …）、說明含 userId", () => {
+  ok("有 LINE 名稱 → 標題含（顯示名）、說明含 userId", () => {
     const { event } = buildRecoveryEvent({ name: "王小明", phone: "090", address: "x", date: "2026-08-01", slot: "any", note: "", lineUserId: "U" + "b".repeat(32), lineDisplayName: "小熊" });
     assert.ok(event.summary.includes("回收"));
-    assert.ok(event.summary.includes("（LINE: 小熊）"));
+    assert.ok(event.summary.includes("（小熊）"));
     assert.ok(event.description.includes("U" + "b".repeat(32)));
   });
   ok("無 LINE 資訊 → 標題帶 ⚠️（無LINE），仍含回收+姓名", () => {
