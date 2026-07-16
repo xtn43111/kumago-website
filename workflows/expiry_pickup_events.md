@@ -68,7 +68,18 @@ Email：vivi8601201@gmail.com
 
 ## 操作方式
 
-事件目前是**手動建立**的（webhook 只建「入住配送」事件，不建到期事件）。
+**2026-07-16 起自動化**：Stripe webhook 付款成功時，`lib/gcal.js createOrderEvent`
+除了「入住配送」事件會**同步建立【到期】事件**（`buildExpiryEvent`：品項＝套組基底＋加購、
+到期日＝入住日＋租期－1天、備註含客製字樣時標題加 ⚠️品項有客製待核）。
+冪等 id＝sha1("expiry-"+配送事件id)，webhook 重試不會重複建。
+既有舊單已用 `tools/backfill_expiry_events.js` 批次補建（2026-07-16，114 筆）；
+該工具可重跑（冪等，公式同上），日後發現漏網再跑一次即可。
+清查工具：`tools/audit_expiry_events.js`（唯讀，列出缺到期事件的配送單）。
+
+⚠️ 建到期事件的鐵則：**標題不可含「回收」二字**——`lib/recovery.js` 的 classify
+會把含「回收」的標題搶去當回收工作事件，防漏報表就對不上了。
+
+手動建立（Telegram bot 或直接在月曆）仍可，格式照下方欄位規範。
 
 - 月曆讀寫工具在 `lib/gcal.js`（`listEvents()` 可列事件；OAuth refresh-token，無 SDK）。
 - 批次補 / 改內文：照 `lib/gcal.js` 的 auth 寫一次性 script，用 Calendar REST
