@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-i18n="inplace">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-ja="レンタル継続（更新）— KUMAGO" data-en="Renew Your Rental — KUMAGO">續租申請 — KUMAGO 家具家電租賃</title>
+  <meta name="description" content="KUMAGO 年租續租申請。選擇續租期間，線上刷卡完成續約。" />
+  <meta name="robots" content="noindex" />
+
+  <link rel="icon" type="image/png" href="assets/kumago-logo-mark.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Sans+TC:wght@400;500;700;900&family=Nunito:wght@400;600;700&family=Quicksand:wght@600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="order.css" />
+  <link rel="stylesheet" href="recovery.css" />
+  <style>
+    /* 續租期間選項卡（沿用品牌奶茶色系） */
+    .renew-options { display: grid; gap: 12px; }
+    .renew-opt {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 18px; border: 2px solid #E8DCCF; border-radius: 14px;
+      background: #fff; cursor: pointer; transition: border-color .15s, background .15s;
+      font: inherit; text-align: left; width: 100%;
+    }
+    .renew-opt:hover { border-color: #C8A279; }
+    .renew-opt.is-active { border-color: #C8A279; background: #FBF6EF; }
+    .renew-opt .ro-label { font-weight: 700; }
+    .renew-opt .ro-price { font-weight: 800; color: #7A5230; }
+    .renew-summary { margin-top: 4px; }
+    .renew-loading, .renew-error { padding: 24px 0; }
+  </style>
+</head>
+<body>
+
+  <!-- ============ HEADER ============ -->
+  <header class="site-header" id="top">
+    <div class="container header-inner">
+      <a href="index.html" class="brand" aria-label="KUMAGO 家具家電租賃 首頁">
+        <img src="assets/kumago-logo-mark.png" alt="KUMAGO" class="brand-mark" width="772" height="1230" />
+        <span class="brand-text">
+          <span class="brand-name">KUMAGO</span>
+          <span class="brand-sub" data-ja="家具家電レンタル" data-en="Furniture & Appliance Rental">家具家電租賃</span>
+        </span>
+      </a>
+
+      <nav class="nav" id="nav" aria-label="主要導覽">
+        <a href="index.html#categories" data-ja="レンタル品目" data-en="Rental Items">租賃品項</a>
+        <a href="index.html#plans" data-ja="レンタルプラン" data-en="Rental Plans">租賃方案</a>
+        <a href="index.html#how" data-ja="ご利用の流れ" data-en="How It Works">服務流程</a>
+        <a href="index.html#contact" class="btn btn-primary btn-sm nav-cta" data-ja="LINEで相談" data-en="Chat on LINE">LINE 諮詢</a>
+        <button class="lang-toggle" id="langToggle" type="button" aria-label="切換語言 / 言語切替">
+          <span class="lang-opt is-active" data-lang="zh">中</span>
+          <span class="lang-opt" data-lang="ja">日</span>
+          <span class="lang-opt" data-lang="en">EN</span>
+        </button>
+      </nav>
+
+      <button class="nav-toggle" id="navToggle" aria-label="開啟選單" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="order-main">
+    <div class="container recovery-container">
+      <a href="index.html" class="back-link">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg>
+        <span data-ja="トップに戻る" data-en="Back to Home">回首頁</span>
+      </a>
+
+      <div class="order-head">
+        <p class="eyebrow">Rental Renewal</p>
+        <h1 data-ja="レンタル継続（更新）" data-en="Renew Your Rental">續租申請</h1>
+        <p data-ja="現在ご利用中のレンタルをそのまま継続できます。期間を選んでオンライン決済するだけで完了です。" data-en="Keep using your current rental — just choose a renewal period and pay online.">
+          目前租用中的家具家電可以直接續租。選擇續租期間、線上刷卡即完成，物品原地續用。
+        </p>
+      </div>
+
+      <!-- 載入中 -->
+      <div class="renew-loading" id="renewLoading">
+        <p data-ja="ご契約情報を読み込んでいます…" data-en="Loading your rental details…">正在載入您的租約資料…</p>
+      </div>
+
+      <!-- 讀不到（沒有 eid / 事件不存在） -->
+      <div class="renew-error" id="renewError" hidden>
+        <p data-ja="ご契約情報が見つかりませんでした。お手数ですが、LINEのトークからお問い合わせください 🐻" data-en="We couldn't find your rental details. Please contact us via LINE chat 🐻">
+          找不到您的租約資料。請直接在 LINE 對話中告訴我們您要續租，我們會盡快協助您 🐻
+        </p>
+        <a href="https://lin.ee/z3yASqK" class="btn-line-add" target="_blank" rel="noopener">
+          <span data-ja="LINEで問い合わせる" data-en="Contact us on LINE">用 LINE 聯絡我們</span>
+        </a>
+      </div>
+
+      <!-- ============ FORM ============ -->
+      <form class="recovery-form" id="renewForm" hidden>
+        <section class="step-block">
+          <h2 class="step-title"><span class="step-num">1</span><span data-ja="現在のご契約" data-en="Your Current Rental">目前租約</span></h2>
+          <div class="field">
+            <p id="planLine" style="font-weight:700;"></p>
+            <p id="expiryLine" class="field-hint"></p>
+          </div>
+        </section>
+
+        <section class="step-block">
+          <h2 class="step-title"><span class="step-num">2</span><span data-ja="継続期間を選択" data-en="Choose Renewal Period">選擇續租期間</span></h2>
+          <div class="renew-options" id="renewOptions"></div>
+          <p class="field-hint" id="quoteHint" hidden
+             data-ja="※ 料金は担当者が確認後、LINEにてご案内いたします。"
+             data-en="※ Our team will confirm the price and send it to you via LINE.">
+            ※ 續租價格由我們確認後，透過 LINE 回覆您。
+          </p>
+        </section>
+
+        <button type="submit" class="btn-pay" id="submitBtn" disabled data-ja="オンライン決済へ進む" data-en="Continue to Payment">前往線上刷卡</button>
+        <div class="form-error" id="formError" hidden></div>
+
+        <p class="pay-policy" data-ja="決済完了後、契約期間は自動で延長され、LINEにて確認メッセージをお送りします。" data-en="After payment, your rental period is extended automatically and a confirmation is sent via LINE.">
+          刷卡完成後，租期自動延長，並會在 LINE 傳送確認訊息給您 🐻
+        </p>
+      </form>
+
+      <!-- ============ SUCCESS（人工報價模式送出後） ============ -->
+      <div class="recovery-done" id="renewDone" hidden>
+        <div class="done-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h2 data-ja="継続のご希望を受け付けました" data-en="Renewal Request Received">已收到您的續租申請</h2>
+        <p data-ja="担当者が料金を確認のうえ、LINEにて決済リンクをお送りします（通常1営業日以内）。" data-en="Our team will confirm the price and send you a payment link via LINE (usually within one business day).">
+          我們會確認續租金額後，透過 LINE 傳送刷卡連結給您（通常一個工作天內）。
+        </p>
+        <a href="index.html" class="done-home" data-ja="トップに戻る" data-en="Back to Home">回首頁</a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-bottom" style="border-top:none;">
+      <p>© 2026 KUMAGO 家具家電租賃. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="renewal-form.js"></script>
+</body>
+</html>

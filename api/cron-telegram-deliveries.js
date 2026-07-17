@@ -13,8 +13,10 @@
 
 "use strict";
 
-const { listEvents } = require("../lib/gcal.js");
+const { listEvents, patchEvent, jstToday } = require("../lib/gcal.js");
 const { jstTomorrowWindow, buildDigest, sendTelegram } = require("../lib/telegram.js");
+const { runRenewalNotices } = require("../lib/renewal_notice.js");
+const { sendLinePush } = require("../lib/line_push.js");
 
 module.exports = async function handler(req, res) {
   // Fail-closed: unset CRON_SECRET must stop the cron (a visible failure), never
@@ -40,12 +42,24 @@ module.exports = async function handler(req, res) {
       messageIds.push(await sendTelegram(m));
     }
 
+    // 年租 30 天到期通知（同一支每日 cron 順跑；失敗不擋 digest 回報）
+    let renewalNotice = null;
+    try {
+      renewalNotice = await runRenewalNotices({
+        listEvents, patchEvent, sendLinePush, sendTelegram,
+        todayISO: jstToday(),
+      });
+    } catch (e) {
+      renewalNotice = { error: e.message };
+    }
+
     return res.status(200).json({
       ok: true,
       date: w.dateStr,
       count: events.length,
       messages: messageIds.length,
       messageIds,
+      renewalNotice,
     });
   } catch (e) {
     return res.status(500).json({ ok: false, error: e.message });
