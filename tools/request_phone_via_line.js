@@ -56,12 +56,32 @@ const MSG = {
   en: "🐻 Hello from KUMAGO! We're updating our annual-rental customer records. Could you reply here with your phone number (e.g. 080-1234-5678)? It will only be used to contact you about delivery and pick-up. Thank you! 🙏",
 };
 
+async function profileOk(uid) {
+  const r = await fetch(`https://api.line.me/v2/bot/profile/${uid}`, {
+    headers: { Authorization: `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}` },
+  });
+  return r.status === 200;
+}
+
 async function main() {
   const send = process.argv.includes("--send");
+  // --skip "名字A,名字B"：名字含任一子串者不發（誤併組等人工個案）
+  const skipIdx = process.argv.indexOf("--skip");
+  const skips = skipIdx > -1 ? process.argv[skipIdx + 1].split(",").map((s) => s.trim()).filter(Boolean) : [];
   const roster = JSON.parse(fs.readFileSync(path.join(ROOT, ".tmp", "annual_roster.json"), "utf8"));
-  const targets = roster.filter((r) => !r.phone && r.lineUserId);
+  const candidates = roster.filter((r) => !r.phone && r.lineUserId);
 
-  console.log(`${send ? "SEND" : "預覽"}：缺電話且可 LINE 推播 ${targets.length} 位\n`);
+  const targets = [], unreachable = [], skipped = [];
+  for (const c of candidates) {
+    if (skips.some((s) => c.name.includes(s))) { skipped.push(c); continue; }
+    if (await profileOk(c.lineUserId)) targets.push(c);
+    else unreachable.push(c);
+    await new Promise((r2) => setTimeout(r2, 60));
+  }
+  console.log(`${send ? "SEND" : "預覽"}：缺電話 ${candidates.length} 位 → 可推播 ${targets.length}／不可推播 ${unreachable.length}／--skip ${skipped.length}\n`);
+  if (unreachable.length) {
+    console.log("🚫 不可推播（死 id/封鎖，請手動聯絡）：" + unreachable.map((u) => u.name).join("、") + "\n");
+  }
   for (const t of targets) {
     const pref = q(`SELECT lang FROM customer_pref WHERE customer_id='${esc(t.lineUserId)}'`);
     t.lang = pref.length ? pref[0].lang : "zh";
