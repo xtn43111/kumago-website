@@ -18,6 +18,7 @@ const crypto = require("crypto");
 const { sendOrderEmails, orderView } = require("../lib/mailer.js");
 const { createOrderEvent, orderEventId, getEvent, patchEvent } = require("../lib/gcal.js");
 const { buildOrderPush, sendTelegram } = require("../lib/telegram.js");
+const { handleRenewal } = require("../lib/renewal.js");
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -134,6 +135,16 @@ module.exports = async function handler(req, res) {
   if (alreadyNotified) {
     console.log("stripe-webhook: dedup — already notified", session.id);
     return res.status(200).json({ received: true, deduped: true });
+  }
+
+  // 續租單（tools/create_renewal_link.js 產生，metadata 帶 kumago_renewal=1）
+  // 走獨立流程：不建「入住配送」事件，改為建【續租】紀錄事件＋順延既有
+  // 【到期】事件＋續租版通知信/推播。上面的 kumago_notified 去重照常生效
+  //（紀錄事件用同一個 sha1(session id) 冪等 id）。
+  if (meta.kumago_renewal === "1") {
+    const renewal = await handleRenewal(session, meta, lineItems, amountTotal);
+    console.log("stripe-webhook: renewal", JSON.stringify({ id: session.id, ...renewal }));
+    return res.status(200).json({ received: true, renewal });
   }
 
   // Record the order onto the shop Google Calendar first (idempotent on session
