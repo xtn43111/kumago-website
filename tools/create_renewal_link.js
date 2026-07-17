@@ -59,6 +59,7 @@ function parseArgs(argv) {
     if (!a.startsWith("--")) continue;
     const key = a.slice(2);
     if (key === "dry-run") { args.dryRun = true; continue; }
+    if (key === "payment-link") { args.paymentLink = true; continue; }
     args[key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = argv[++i];
   }
   return args;
@@ -145,21 +146,40 @@ function durationLabel(months) {
   }
 
   const params = new URLSearchParams();
-  params.append("mode", "payment");
-  params.append("success_url", `${SITE_ORIGIN}/success?session_id={CHECKOUT_SESSION_ID}`);
-  params.append("cancel_url", `${SITE_ORIGIN}/`);
-  params.append("locale", meta.lang === "ja" ? "ja" : meta.lang === "en" ? "en" : "zh-TW");
-  if (isEmail) params.append("customer_email", email);
-  params.append("line_items[0][price_data][currency]", "jpy");
-  params.append("line_items[0][price_data][product_data][name]", itemName);
-  params.append("line_items[0][price_data][unit_amount]", String(amount));
-  params.append("line_items[0][quantity]", "1");
-  Object.entries(meta).forEach(([k, v]) => {
-    params.append(`metadata[${k}]`, String(v).slice(0, 500));
-    params.append(`payment_intent_data[metadata][${k}]`, String(v).slice(0, 500));
-  });
+  if (a.paymentLink) {
+    // Payment Link：不會 24 小時過期（付款一次後自動失效）。
+    // metadata 會被 Stripe 原樣複製到 checkout session，webhook 續租分支照常吃到。
+    params.append("line_items[0][price_data][currency]", "jpy");
+    params.append("line_items[0][price_data][product_data][name]", itemName);
+    params.append("line_items[0][price_data][unit_amount]", String(amount));
+    params.append("line_items[0][quantity]", "1");
+    params.append("restrictions[completed_sessions][limit]", "1");
+    params.append("after_completion[type]", "redirect");
+    params.append("after_completion[redirect][url]", `${SITE_ORIGIN}/success?session_id={CHECKOUT_SESSION_ID}`);
+    Object.entries(meta).forEach(([k, v]) => {
+      params.append(`metadata[${k}]`, String(v).slice(0, 500));
+      params.append(`payment_intent_data[metadata][${k}]`, String(v).slice(0, 500));
+    });
+  } else {
+    params.append("mode", "payment");
+    params.append("success_url", `${SITE_ORIGIN}/success?session_id={CHECKOUT_SESSION_ID}`);
+    params.append("cancel_url", `${SITE_ORIGIN}/`);
+    params.append("locale", meta.lang === "ja" ? "ja" : meta.lang === "en" ? "en" : "zh-TW");
+    if (isEmail) params.append("customer_email", email);
+    params.append("line_items[0][price_data][currency]", "jpy");
+    params.append("line_items[0][price_data][product_data][name]", itemName);
+    params.append("line_items[0][price_data][unit_amount]", String(amount));
+    params.append("line_items[0][quantity]", "1");
+    Object.entries(meta).forEach(([k, v]) => {
+      params.append(`metadata[${k}]`, String(v).slice(0, 500));
+      params.append(`payment_intent_data[metadata][${k}]`, String(v).slice(0, 500));
+    });
+  }
 
-  const r = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+  const endpoint = a.paymentLink
+    ? "https://api.stripe.com/v1/payment_links"
+    : "https://api.stripe.com/v1/checkout/sessions";
+  const r = await fetch(endpoint, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${secret}`,
@@ -170,8 +190,15 @@ function durationLabel(months) {
   const data = await r.json();
   if (!r.ok) fail("Stripe 錯誤：" + ((data.error && data.error.message) || r.status));
 
-  console.log("✅ 付款連結（24 小時內有效）：");
-  console.log(data.url);
-  console.log("");
-  console.log("session id：" + data.id);
+  if (a.paymentLink) {
+    console.log("✅ 付款連結（Payment Link，付款前一直有效、付一次即失效）：");
+    console.log(data.url);
+    console.log("");
+    console.log("payment link id：" + data.id + "（要提前作廢：POST /v1/payment_links/" + data.id + " active=false）");
+  } else {
+    console.log("✅ 付款連結（24 小時內有效）：");
+    console.log(data.url);
+    console.log("");
+    console.log("session id：" + data.id);
+  }
 })().catch((e) => fail(e.message));
