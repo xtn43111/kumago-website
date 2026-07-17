@@ -79,8 +79,14 @@ function durationLabel(months) {
 (async () => {
   const a = parseArgs(process.argv);
 
-  const secret = process.env.STRIPE_SECRET_KEY;
+  // 本機 .env 放的是測試金鑰；要出正式連結，把正式金鑰放 .env.local 的
+  // STRIPE_SECRET_KEY_LIVE（gitignored），這裡優先吃它。
+  const secret = process.env.STRIPE_SECRET_KEY_LIVE || process.env.STRIPE_SECRET_KEY;
   if (!secret) fail("STRIPE_SECRET_KEY 未設定（.env）");
+  if (secret.startsWith("sk_test")) {
+    console.log("⚠️ 目前用的是 sk_test 測試金鑰——產出的連結不能刷真卡。");
+    console.log("   要出正式連結：在 .env.local 加 STRIPE_SECRET_KEY_LIVE=sk_live_...\n");
+  }
   if (!a.name) fail("--name 必填");
   const amount = parseInt(a.amount, 10);
   if (!amount || amount <= 0) fail("--amount 必填（日圓整數）");
