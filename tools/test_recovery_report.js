@@ -82,6 +82,68 @@ ok("單字中文名（荊/張/涓）取開頭單字", () => {
 ok("5字母以上羅馬單字仍可比對（HSING）", () => {
   assert.ok(nameFrags("賴星妤（HSING） 入住配送 B 套組").has("HSING"));
 });
+ok("「1年」的「年」不是名字碎片（Diya/Sanse/Ngjojo 不互配）", () => {
+  const diya = nameFrags("Diya 配送 B set 1年 ¥51,000");
+  const sanse = nameFrags("Sanse 配送 A方案2年 ¥76,560");
+  const ngjojo = nameFrags("Ngjojo 配送 C方案1年 ¥96,160");
+  assert.ok(!diya.has("年") && !sanse.has("年") && !ngjojo.has("年"));
+  assert.ok(diya.has("DIYA"), "Diya 要走 3-4 字母 fallback 成碎片");
+  for (const x of diya) assert.ok(!sanse.has(x) && !ngjojo.has(x), `不該共有碎片：${x}`);
+  for (const x of sanse) assert.ok(!ngjojo.has(x), `不該共有碎片：${x}`);
+});
+ok("「Vera 年租回收」剝完剩 VERA，不含「年」", () => {
+  const f = nameFrags("Vera 年租回收");
+  assert.ok(!f.has("年"));
+  assert.ok(f.has("VERA"));
+});
+ok("同一人仍對得上：Diya 配送 vs 【到期】Diya", () => {
+  const dv = nameFrags("Diya 配送 B set 1年 ¥51,000");
+  const ex = nameFrags("【到期】Diya B set 1年");
+  assert.ok([...dv].some((x) => ex.has(x)));
+});
+
+// ── 日期防呆：回收日早於租期起日不算這筆的回收 ──
+ok("回收日早於租期起日 → 不配（雅媗 vs Chao-Chang chen）", () => {
+  const { buildRecoveryReport } = require("../lib/recovery.js");
+  const msgs = buildRecoveryReport(
+    [
+      {
+        summary: "【到期】雅媗 CHANG YA XUAN B set",
+        description: "租期：配送 2025-09-30 起（到期日為推估）",
+        start: { date: "2026-09-30" },
+      },
+      { summary: "Chao-Chang chen 回收 ¥7000", start: { date: "2025-08-10" } },
+    ],
+    "2026-07-17",
+    45
+  ).join("\n");
+  assert.ok(!/待標「回收完畢」/.test(msgs), "不該進待標完畢");
+  assert.ok(/更遠期/.test(msgs), "應留在遠期未安排");
+});
+ok("中文碎片包含也算同一人：欣蓓 ⊂ 蔡欣蓓", () => {
+  const { buildRecoveryReport } = require("../lib/recovery.js");
+  const msgs = buildRecoveryReport(
+    [
+      { summary: "【到期】欣蓓 B set租一年", start: { date: "2026-07-22" } },
+      { summary: "【上午】回收 蔡欣蓓 家電傢俱", start: { date: "2026-07-19" } },
+    ],
+    "2026-07-17",
+    45
+  ).join("\n");
+  assert.ok(/待標「回收完畢」/.test(msgs) && /欣蓓/.test(msgs));
+});
+ok("提前解約回收（起日之後、到期前）仍配得上", () => {
+  const { buildRecoveryReport } = require("../lib/recovery.js");
+  const msgs = buildRecoveryReport(
+    [
+      { summary: "Sanse 配送 A方案2年 ¥76,560", start: { date: "2025-09-09" } },
+      { summary: "Sanse 小牛 回收家電（上午）", start: { date: "2026-02-17" } },
+    ],
+    "2026-07-17",
+    45
+  ).join("\n");
+  assert.ok(/待標「回收完畢」/.test(msgs) && /Sanse/.test(msgs));
+});
 
 ok("⚠️品項有客製待核 後綴不成碎片、單字名仍對得上", () => {
   const ex = nameFrags("【到期】劉 B set ⚠️品項有客製待核");
