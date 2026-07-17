@@ -96,6 +96,12 @@ ok("「Vera 年租回收」剝完剩 VERA，不含「年」", () => {
   assert.ok(!f.has("年"));
   assert.ok(f.has("VERA"));
 });
+ok("結案後綴（回收完畢/已完成）不成碎片、名字不消失", () => {
+  const f = nameFrags("Vera 年租回收 回收完畢");
+  assert.ok(f.has("VERA") && !f.has("完畢"));
+  const g = nameFrags("【到期】蘇伯維 A set租一年 已完成");
+  assert.ok(g.has("蘇伯維") && ![...g].some((x) => /完成|已/.test(x)));
+});
 ok("同一人仍對得上：Diya 配送 vs 【到期】Diya", () => {
   const dv = nameFrags("Diya 配送 B set 1年 ¥51,000");
   const ex = nameFrags("【到期】Diya B set 1年");
