@@ -124,7 +124,10 @@ function durationLabel(months) {
     lang: a.lang || "zh",
   };
 
-  const itemName = `【續租】${planName} × ${duration}${a.itemsNote ? "（含原加購品項）" : ""}`;
+  const itemName =
+    meta.lang === "en"
+      ? `[Renewal] ${plan ? `Plan ${plan}` : "Rental"} × ${months % 12 === 0 ? `${months / 12} year${months > 12 ? "s" : ""}` : `${months} months`}`
+      : `【續租】${planName} × ${duration}${a.itemsNote ? "（含原加購品項）" : ""}`;
 
   console.log("── 續租單內容 ──");
   console.log(`客人：${a.name}${a.phone ? "　" + a.phone : ""}${email ? "　" + email : ""}`);
@@ -145,7 +148,7 @@ function durationLabel(months) {
   params.append("mode", "payment");
   params.append("success_url", `${SITE_ORIGIN}/success?session_id={CHECKOUT_SESSION_ID}`);
   params.append("cancel_url", `${SITE_ORIGIN}/`);
-  params.append("locale", meta.lang === "ja" ? "ja" : "zh-TW");
+  params.append("locale", meta.lang === "ja" ? "ja" : meta.lang === "en" ? "en" : "zh-TW");
   if (isEmail) params.append("customer_email", email);
   params.append("line_items[0][price_data][currency]", "jpy");
   params.append("line_items[0][price_data][product_data][name]", itemName);
