@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /* KUMAGO — 產生「期滿回收處理費」Stripe 刷卡連結（老闆專用 CLI，不開公開端點）。
  *
+ * 產生邏輯共用 lib/recovery_link.js（Telegram 的「/回收連結」指令也用同一份）。
  * metadata 帶 kumago_recovery=1，付款後 api/stripe-webhook.js 走
- * lib/recovery_payment.js：建【回收（費用已付）】行事曆事件（回收日全天）、
- * 有 line_user_id 就 LINE 推播客人付款確認、Telegram 通知老闆。
+ * lib/recovery_payment.js：建【回收（費用已付）】行事曆事件、有 line_user_id
+ * 就 LINE 推播客人付款確認、Telegram 通知老闆。
  *
- * ⚠️ webhook 的回收分支要先部署到 Vercel，客人才可以付款。
  * ⚠️ 預設產 Payment Link（付款前一直有效、付一次即失效）；--session 改產
  *    Checkout Session（24 小時過期；可用 --expires "YYYY-MM-DDTHH:MM" 指定
  *    JST 期限，需在 30 分鐘～24 小時內）。
@@ -17,7 +17,7 @@
  *     --items "洗衣機、冰箱、床墊、桌子、椅子×2" \
  *     --elevator yes --phone 090xxxxxxxx \
  *     --line-user-id Uxxxx --line-name 顯示名 --note "備註" \
- *     [--session] [--dry-run]
+ *     [--session] [--expires "2026-07-19T12:00"] [--dry-run]
  *
  * 必填：--name --amount --date --address；其餘選填。
  */
@@ -45,7 +45,8 @@ function loadEnv(file) {
 loadEnv(".env");
 loadEnv(".env.local");
 
-const SITE_ORIGIN = "https://kumago.7-mori.com";
+const { createRecoveryLink, buildRecoveryMeta, itemNameFor, isRealDate } =
+  require(path.join(ROOT, "lib", "recovery_link.js"));
 
 function parseArgs(argv) {
   const args = {};
@@ -65,12 +66,6 @@ function fail(msg) {
   process.exit(1);
 }
 
-function isRealDate(s) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s || "")) return false;
-  const d = new Date(`${s}T00:00:00Z`);
-  return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
-}
-
 (async () => {
   const a = parseArgs(process.argv);
 
@@ -86,7 +81,6 @@ function isRealDate(s) {
   if (!amount || amount <= 0) fail("--amount 必填（日圓整數）");
   if (!isRealDate(a.date)) fail("--date 必填（YYYY-MM-DD，希望回收日）");
   if (!a.address) fail("--address 必填（收取地址）");
-  const elevator = a.elevator === "yes" || a.elevator === "no" ? a.elevator : "";
 
   // --expires：JST 牆鐘時間 → epoch 秒。僅 --session 模式有效（Stripe 限 30 分～24 小時）。
   let expiresAt = null;
@@ -100,32 +94,29 @@ function isRealDate(s) {
     if (!a.session) fail("--expires 只支援 --session 模式（Payment Link 沒有期限功能）");
   }
 
-  const meta = {
-    kumago_recovery: "1",
-    customer_name: a.name,
-    customer_phone: a.phone || "",
-    recovery_date: a.date,
+  const v = {
+    name: a.name,
+    amount,
+    date: a.date,
     address: a.address,
-    items_note: a.items || "",
-    elevator,
-    line_display_name: String(a.lineName || "").trim().slice(0, 60),
-    line_user_id: /^U[0-9a-f]{32}$/.test(String(a.lineUserId || "")) ? String(a.lineUserId) : "",
+    items: a.items || "",
+    elevator: a.elevator === "yes" || a.elevator === "no" ? a.elevator : "",
+    phone: a.phone || "",
+    lineUserId: a.lineUserId || "",
+    lineName: a.lineName || "",
     note: a.note || "",
     lang: a.lang || "zh",
   };
-
-  const itemName =
-    meta.lang === "ja"
-      ? `【回収】期満回収 処理費（回収日 ${a.date}）`
-      : `【回收】期滿回收處理費（回收日 ${a.date}）`;
+  const meta = buildRecoveryMeta(v);
 
   console.log("── 回收處理費 ──");
-  console.log(`客人：${a.name}${a.phone ? "　" + a.phone : ""}`);
-  console.log(`項目：${itemName}`);
+  console.log(`客人：${v.name}${v.phone ? "　" + v.phone : ""}`);
+  console.log(`項目：${itemNameFor(v)}`);
   console.log(`金額：¥${amount.toLocaleString("ja-JP")}`);
-  console.log(`回收日：${a.date}`);
-  console.log(`收取地址：${a.address}${elevator ? `（${elevator === "yes" ? "有" : "無"}電梯）` : ""}`);
-  if (meta.items_note) console.log(`品項：${meta.items_note}`);
+  console.log(`回收日：${v.date}`);
+  console.log(`收取地址：${v.address}${v.elevator ? `（${v.elevator === "yes" ? "有" : "無"}電梯）` : ""}`);
+  if (v.items) console.log(`品項：${v.items}`);
+  if (expiresAt) console.log(`付款期限：${a.expires}（JST）`);
   if (!meta.line_user_id) console.log("（未給 line-user-id：付款後不推 LINE 確認，老闆 Telegram 照通知）");
   console.log("");
 
@@ -135,56 +126,17 @@ function isRealDate(s) {
     return;
   }
 
-  const params = new URLSearchParams();
-  if (a.session) {
-    params.append("mode", "payment");
-    if (expiresAt) params.append("expires_at", String(expiresAt));
-    params.append("success_url", `${SITE_ORIGIN}/success?session_id={CHECKOUT_SESSION_ID}`);
-    params.append("cancel_url", `${SITE_ORIGIN}/`);
-    params.append("locale", meta.lang === "ja" ? "ja" : "zh-TW");
-    params.append("line_items[0][price_data][currency]", "jpy");
-    params.append("line_items[0][price_data][product_data][name]", itemName);
-    params.append("line_items[0][price_data][unit_amount]", String(amount));
-    params.append("line_items[0][quantity]", "1");
-  } else {
-    // Payment Link：不會 24 小時過期（付款一次後自動失效）。
-    // metadata 會被 Stripe 原樣複製到 checkout session，webhook 回收分支照常吃到。
-    params.append("line_items[0][price_data][currency]", "jpy");
-    params.append("line_items[0][price_data][product_data][name]", itemName);
-    params.append("line_items[0][price_data][unit_amount]", String(amount));
-    params.append("line_items[0][quantity]", "1");
-    params.append("restrictions[completed_sessions][limit]", "1");
-    params.append("after_completion[type]", "redirect");
-    params.append("after_completion[redirect][url]", `${SITE_ORIGIN}/success?session_id={CHECKOUT_SESSION_ID}`);
-  }
-  Object.entries(meta).forEach(([k, v]) => {
-    params.append(`metadata[${k}]`, String(v).slice(0, 500));
-    params.append(`payment_intent_data[metadata][${k}]`, String(v).slice(0, 500));
-  });
+  const r = await createRecoveryLink(v, secret, { session: !!a.session, expiresAt });
 
-  const endpoint = a.session
-    ? "https://api.stripe.com/v1/checkout/sessions"
-    : "https://api.stripe.com/v1/payment_links";
-  const r = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${secret}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: params.toString(),
-  });
-  const data = await r.json();
-  if (!r.ok) fail("Stripe 錯誤：" + ((data.error && data.error.message) || r.status));
-
-  if (a.session) {
-    console.log("✅ 付款連結（24 小時內有效）：");
-    console.log(data.url);
+  if (r.mode === "session") {
+    console.log(`✅ 付款連結（${expiresAt ? "到期限前有效" : "24 小時內有效"}）：`);
+    console.log(r.url);
     console.log("");
-    console.log("session id：" + data.id);
+    console.log("session id：" + r.id);
   } else {
     console.log("✅ 付款連結（Payment Link，付款前一直有效、付一次即失效）：");
-    console.log(data.url);
+    console.log(r.url);
     console.log("");
-    console.log("payment link id：" + data.id + "（要提前作廢：POST /v1/payment_links/" + data.id + " active=false）");
+    console.log("payment link id：" + r.id + "（要提前作廢：POST /v1/payment_links/" + r.id + " active=false）");
   }
 })().catch((e) => fail(e.message));

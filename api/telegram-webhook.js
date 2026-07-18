@@ -31,6 +31,10 @@ const {
   jstMonthWindow, parseMonth, buildMonthOverview, buildMonthDetail,
 } = require("../lib/telegram.js");
 const { buildManualEvent, parseDate, parsePhotoUpdate, TEMPLATE, photoDescLine, PHOTO_LINE_RE } = require("../lib/tg_event.js");
+const {
+  parseRecoveryLinkCommand, createRecoveryLink, buildCustomerMessage,
+  mdLabel, CMD_TEMPLATE: RECOVERY_LINK_TEMPLATE,
+} = require("../lib/recovery_link.js");
 
 /* Shown in /start & /help: how to ask for a specific day's tidied agenda, and
  * the two whole-month views. */
@@ -43,7 +47,9 @@ const QUERY_HELP =
   "🗓 查整月行程：\n" +
   "　/本月            → 本月有行程的日期統整\n" +
   "　/本月詳細        → 本月每天的完整行程\n" +
-  "　/本月 8　/本月詳細 2026-08 → 指定月份";
+  "　/本月 8　/本月詳細 2026-08 → 指定月份\n\n" +
+  "🧾 產回收處理費刷卡連結：\n" +
+  "　/回收連結        → 顯示填寫範本";
 
 /* Public base URL for building the photo proxy link. Prefer an explicit env so
  * the link is stable regardless of which Vercel host served the request. */
@@ -261,6 +267,43 @@ module.exports = async function handler(req, res) {
       await safeReply(chatId, `⚠️ 連不上本機配對服務（Mac 可能睡眠中）：${e.message}`, true);
     }
     return res.status(200).json({ ok: true, pair: true });
+  }
+
+  // 「/回收連結」：產回收處理費 Stripe 刷卡連結，回一段可直接轉貼給客人 LINE
+  // 的文字（層次一：bot 不直接推客人，老闆自己貼）。金額大時附提醒但照產——
+  // owner-only 指令，錯了可用回覆裡的 id 作廢。
+  const rl = fileId ? null : parseRecoveryLinkCommand(text, jstToday());
+  if (rl) {
+    if (!rl.ok) {
+      await safeReply(chatId, rl.error === "template" ? RECOVERY_LINK_TEMPLATE : `⚠️ ${rl.error}\n\n${RECOVERY_LINK_TEMPLATE}`, true);
+      return res.status(200).json({ ok: true, recoveryLink: "bad_args" });
+    }
+    const secret = process.env.STRIPE_SECRET_KEY;
+    if (!secret) {
+      await safeReply(chatId, "❌ STRIPE_SECRET_KEY 未設定，產不了連結", true);
+      return res.status(200).json({ ok: true, recoveryLink: "no_secret" });
+    }
+    try {
+      const r = await createRecoveryLink(rl.value, secret, { expiresAt: rl.expiresAt });
+      const v = rl.value;
+      const head = [
+        `✅ 連結已產生（¥${Number(v.amount).toLocaleString("ja-JP")}／${v.name}／回收日 ${mdLabel(v.date)}）`,
+        r.mode === "session"
+          ? "⏰ 有付款期限，逾期連結自動失效"
+          : "♾ 無期限，付一次即失效",
+        Number(v.amount) >= 100000 ? "⚠️ 金額超過 10 萬円，確認一下沒打錯" : null,
+        "",
+        "👇 下面整段複製、貼到客人 LINE：",
+      ].filter((l) => l !== null).join("\n");
+      await safeReply(chatId, head, true);
+      await safeReply(chatId, buildCustomerMessage(v, r.url, rl.expiresAt), true);
+      await safeReply(chatId, `（要作廢跟我說：${r.id}）`, true);
+      return res.status(200).json({ ok: true, recoveryLink: "created", id: r.id });
+    } catch (e) {
+      console.error("telegram-webhook recovery link:", e);
+      await safeReply(chatId, `❌ 產連結失敗：${e.message}`, true);
+      return res.status(200).json({ ok: true, recoveryLink: "error", error: e.message });
+    }
   }
 
   // Photo UPDATE: "更新照片：7/5 庭綺" + attached photo(s) → replace the 🖼 照片
