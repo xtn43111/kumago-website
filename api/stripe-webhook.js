@@ -19,6 +19,7 @@ const { sendOrderEmails, orderView } = require("../lib/mailer.js");
 const { createOrderEvent, orderEventId, getEvent, patchEvent } = require("../lib/gcal.js");
 const { buildOrderPush, sendTelegram } = require("../lib/telegram.js");
 const { handleRenewal } = require("../lib/renewal.js");
+const { handleRecoveryPayment } = require("../lib/recovery_payment.js");
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -145,6 +146,15 @@ module.exports = async function handler(req, res) {
     const renewal = await handleRenewal(session, meta, lineItems, amountTotal);
     console.log("stripe-webhook: renewal", JSON.stringify({ id: session.id, ...renewal }));
     return res.status(200).json({ received: true, renewal });
+  }
+
+  // 回收處理費（tools/create_recovery_link.js 產生，metadata 帶 kumago_recovery=1）
+  // 走獨立流程：建【回收（費用已付）】事件＋LINE 付款確認＋Telegram，不建配送
+  // 事件、不寄訂單信。kumago_notified 去重照常生效（同一 sha1(session id) 事件 id）。
+  if (meta.kumago_recovery === "1") {
+    const recovery = await handleRecoveryPayment(session, meta, amountTotal);
+    console.log("stripe-webhook: recovery", JSON.stringify({ id: session.id, ...recovery }));
+    return res.status(200).json({ received: true, recovery });
   }
 
   // Record the order onto the shop Google Calendar first (idempotent on session
