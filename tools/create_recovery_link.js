@@ -7,7 +7,8 @@
  *
  * ⚠️ webhook 的回收分支要先部署到 Vercel，客人才可以付款。
  * ⚠️ 預設產 Payment Link（付款前一直有效、付一次即失效）；--session 改產
- *    Checkout Session（24 小時過期）。
+ *    Checkout Session（24 小時過期；可用 --expires "YYYY-MM-DDTHH:MM" 指定
+ *    JST 期限，需在 30 分鐘～24 小時內）。
  *
  * 用法：
  *   node tools/create_recovery_link.js \
@@ -87,6 +88,18 @@ function isRealDate(s) {
   if (!a.address) fail("--address 必填（收取地址）");
   const elevator = a.elevator === "yes" || a.elevator === "no" ? a.elevator : "";
 
+  // --expires：JST 牆鐘時間 → epoch 秒。僅 --session 模式有效（Stripe 限 30 分～24 小時）。
+  let expiresAt = null;
+  if (a.expires) {
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(a.expires)) fail('--expires 格式：YYYY-MM-DDTHH:MM（JST）');
+    expiresAt = Math.floor(Date.parse(a.expires + ":00+09:00") / 1000);
+    if (isNaN(expiresAt)) fail(`--expires ${a.expires} 不是有效時間`);
+    const mins = (expiresAt * 1000 - Date.now()) / 60000;
+    if (mins < 30) fail(`--expires 距現在只剩 ${Math.round(mins)} 分鐘，Stripe 最少要 30 分鐘`);
+    if (mins > 24 * 60) fail("--expires 超過 24 小時，Stripe Checkout Session 上限 24 小時");
+    if (!a.session) fail("--expires 只支援 --session 模式（Payment Link 沒有期限功能）");
+  }
+
   const meta = {
     kumago_recovery: "1",
     customer_name: a.name,
@@ -125,6 +138,7 @@ function isRealDate(s) {
   const params = new URLSearchParams();
   if (a.session) {
     params.append("mode", "payment");
+    if (expiresAt) params.append("expires_at", String(expiresAt));
     params.append("success_url", `${SITE_ORIGIN}/success?session_id={CHECKOUT_SESSION_ID}`);
     params.append("cancel_url", `${SITE_ORIGIN}/`);
     params.append("locale", meta.lang === "ja" ? "ja" : "zh-TW");
