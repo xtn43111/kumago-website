@@ -165,7 +165,10 @@ module.exports = async function handler(req, res) {
 
   let report = { owner: false, customer: false, skipped: false, errors: [] };
   try {
-    report = await sendOrderEmails(meta, lineItems, amountTotal);
+    // contact 非 email 時 fallback 用 Stripe 結帳頁客人自填的 email——付款完成一律要寄。
+    const checkoutEmail =
+      (session.customer_details && session.customer_details.email) || "";
+    report = await sendOrderEmails(meta, lineItems, amountTotal, checkoutEmail);
   } catch (e) {
     // A mail failure must not make Stripe retry endlessly — payment already captured.
     console.error("stripe-webhook: sendOrderEmails threw:", e);
