@@ -20,6 +20,7 @@ const { createOrderEvent, orderEventId, getEvent, patchEvent } = require("../lib
 const { buildOrderPush, sendTelegram } = require("../lib/telegram.js");
 const { handleRenewal } = require("../lib/renewal.js");
 const { handleRecoveryPayment } = require("../lib/recovery_payment.js");
+const { handleMovingPayment } = require("../lib/moving_payment.js");
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -155,6 +156,15 @@ module.exports = async function handler(req, res) {
     const recovery = await handleRecoveryPayment(session, meta, amountTotal);
     console.log("stripe-webhook: recovery", JSON.stringify({ id: session.id, ...recovery }));
     return res.status(200).json({ received: true, recovery });
+  }
+
+  // 搬家服務費（Telegram /搬家連結 產生，metadata 帶 kumago_moving=1）
+  // 走獨立流程：建【搬家（費用已付）】事件＋LINE 付款確認＋確認信＋Telegram，
+  // 不建配送事件、不寄訂單信。kumago_notified 去重照常生效（同 sha1(session id)）。
+  if (meta.kumago_moving === "1") {
+    const moving = await handleMovingPayment(session, meta, amountTotal);
+    console.log("stripe-webhook: moving", JSON.stringify({ id: session.id, ...moving }));
+    return res.status(200).json({ received: true, moving });
   }
 
   // Record the order onto the shop Google Calendar first (idempotent on session

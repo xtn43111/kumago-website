@@ -8,6 +8,11 @@ const {
   buildRecoveryPaidLineText,
   buildRecoveryPaidPush,
 } = require("../lib/recovery_payment.js");
+const {
+  buildRecoveryCustomerEmail,
+  buildRecoveryOwnerEmail,
+  sendRecoveryEmails,
+} = require("../lib/mailer.js");
 
 let n = 0;
 function t(name, fn) { fn(); n++; console.log("  ✓ " + name); }
@@ -70,9 +75,48 @@ t("Telegram 推播 HTML 轉義＋警告行", () => {
   assert.ok(html.includes("電梯：有"));
 });
 
+t("recoveryView：customer_email 映射進 email", () => {
+  const v = recoveryView({ ...meta, customer_email: "taro@example.com" }, 35000);
+  assert.strictEqual(v.email, "taro@example.com");
+  assert.strictEqual(recoveryView(meta, 35000).email, "");
+});
+
+t("回收確認信 builder：客人信含金額/回收日/地址、老闆信含客資", () => {
+  const v = recoveryView({ ...meta, customer_email: "taro@example.com" }, 35000);
+  const cust = buildRecoveryCustomerEmail(v);
+  assert.ok(cust.subject.includes("回收處理費"), cust.subject);
+  assert.ok(cust.text.includes("¥35,000"));
+  assert.ok(cust.text.includes("2026-07-23"));
+  assert.ok(cust.text.includes(meta.address));
+  assert.ok(cust.text.includes("回收當天若時間有異動會再與您聯繫"));
+  assert.ok(cust.html.includes("¥35,000"));
+  const owner = buildRecoveryOwnerEmail(v);
+  assert.ok(owner.text.includes("王小明"));
+  assert.ok(owner.text.includes("¥35,000"));
+  assert.ok(owner.text.includes("taro@example.com"));
+});
+
 t("webhook 分支載入不炸（require api/stripe-webhook.js）", () => {
   const h = require("../api/stripe-webhook.js");
   assert.strictEqual(typeof h, "function");
 });
 
-console.log(`\n${n} tests passed ✅`);
+(async () => {
+  // sendRecoveryEmails：SMTP 未設定 → skipped、不炸（async，放尾端逐一 await）
+  const su = process.env.SMTP_USER, sp = process.env.SMTP_APP_PASSWORD;
+  delete process.env.SMTP_USER;
+  delete process.env.SMTP_APP_PASSWORD;
+  const v = recoveryView(meta, 35000);
+  const rep = await sendRecoveryEmails(v, "");
+  assert.strictEqual(rep.skipped, true);
+  assert.deepStrictEqual(rep.errors, []);
+  if (su !== undefined) process.env.SMTP_USER = su;
+  if (sp !== undefined) process.env.SMTP_APP_PASSWORD = sp;
+  n++;
+  console.log("  ✓ sendRecoveryEmails：SMTP 未設定 → skipped、不炸");
+
+  console.log(`\n${n} tests passed ✅`);
+})().catch((e) => {
+  console.error("  ✗ " + e.message);
+  process.exit(1);
+});

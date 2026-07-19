@@ -35,6 +35,14 @@ const {
   parseRecoveryLinkCommand, createRecoveryLink, buildCustomerMessage,
   mdLabel, CMD_TEMPLATE: RECOVERY_LINK_TEMPLATE,
 } = require("../lib/recovery_link.js");
+const {
+  parseRenewalLinkCommand, createRenewalLink, buildRenewalCustomerMessage,
+  durationLabel, CMD_TEMPLATE: RENEWAL_LINK_TEMPLATE,
+} = require("../lib/renewal_link.js");
+const {
+  parseMovingLinkCommand, createMovingLink, buildMovingCustomerMessage,
+  CMD_TEMPLATE: MOVING_LINK_TEMPLATE,
+} = require("../lib/moving_link.js");
 
 /* Shown in /start & /help: how to ask for a specific day's tidied agenda, and
  * the two whole-month views. */
@@ -48,8 +56,10 @@ const QUERY_HELP =
   "　/本月            → 本月有行程的日期統整\n" +
   "　/本月詳細        → 本月每天的完整行程\n" +
   "　/本月 8　/本月詳細 2026-08 → 指定月份\n\n" +
-  "🧾 產回收處理費刷卡連結：\n" +
-  "　/回收連結        → 顯示填寫範本";
+  "🧾 產刷卡付款連結（都會回填寫範本）：\n" +
+  "　/回收連結        → 回收處理費\n" +
+  "　/續租連結        → 年租續租\n" +
+  "　/搬家連結        → 搬家服務費";
 
 /* Public base URL for building the photo proxy link. Prefer an explicit env so
  * the link is stable regardless of which Vercel host served the request. */
@@ -303,6 +313,80 @@ module.exports = async function handler(req, res) {
       console.error("telegram-webhook recovery link:", e);
       await safeReply(chatId, `❌ 產連結失敗：${e.message}`, true);
       return res.status(200).json({ ok: true, recoveryLink: "error", error: e.message });
+    }
+  }
+
+  // 「/續租連結」：產續租 Stripe 刷卡連結（metadata 對齊 create_renewal_link.js，
+  // 付款後 webhook 直接走既有 handleRenewal 流程）。同 /回收連結 的三則回覆。
+  const rn = fileId ? null : parseRenewalLinkCommand(text, jstToday());
+  if (rn) {
+    if (!rn.ok) {
+      await safeReply(chatId, rn.error === "template" ? RENEWAL_LINK_TEMPLATE : `⚠️ ${rn.error}\n\n${RENEWAL_LINK_TEMPLATE}`, true);
+      return res.status(200).json({ ok: true, renewalLink: "bad_args" });
+    }
+    const secret = process.env.STRIPE_SECRET_KEY;
+    if (!secret) {
+      await safeReply(chatId, "❌ STRIPE_SECRET_KEY 未設定，產不了連結", true);
+      return res.status(200).json({ ok: true, renewalLink: "no_secret" });
+    }
+    try {
+      const r = await createRenewalLink(rn.value, secret, { expiresAt: rn.expiresAt });
+      const v = rn.value;
+      const head = [
+        `✅ 續租連結已產生（¥${Number(v.amount).toLocaleString("ja-JP")}／${v.name}／${v.plan ? v.plan + " 方案 × " : ""}${durationLabel(v.months)}）`,
+        r.mode === "session"
+          ? "⏰ 有付款期限，逾期連結自動失效"
+          : "♾ 無期限，付一次即失效",
+        v.expiryEventId ? null : "⚠️ 未填到期事件id：付款後行事曆【到期】事件要手動順延",
+        v.email ? null : "⚠️ 未填 email：客人系統確認信要靠結帳頁自填（老闆信照寄）",
+        Number(v.amount) >= 100000 ? "⚠️ 金額超過 10 萬円，確認一下沒打錯" : null,
+        "",
+        "👇 下面整段複製、貼到客人 LINE：",
+      ].filter((l) => l !== null).join("\n");
+      await safeReply(chatId, head, true);
+      await safeReply(chatId, buildRenewalCustomerMessage(v, r.url, rn.expiresAt), true);
+      await safeReply(chatId, `（要作廢跟我說：${r.id}）`, true);
+      return res.status(200).json({ ok: true, renewalLink: "created", id: r.id });
+    } catch (e) {
+      console.error("telegram-webhook renewal link:", e);
+      await safeReply(chatId, `❌ 產連結失敗：${e.message}`, true);
+      return res.status(200).json({ ok: true, renewalLink: "error", error: e.message });
+    }
+  }
+
+  // 「/搬家連結」：產搬家服務費 Stripe 刷卡連結（metadata 帶 kumago_moving=1，
+  // 付款後 webhook 走 lib/moving_payment.js）。同 /回收連結 的三則回覆。
+  const mv = fileId ? null : parseMovingLinkCommand(text, jstToday());
+  if (mv) {
+    if (!mv.ok) {
+      await safeReply(chatId, mv.error === "template" ? MOVING_LINK_TEMPLATE : `⚠️ ${mv.error}\n\n${MOVING_LINK_TEMPLATE}`, true);
+      return res.status(200).json({ ok: true, movingLink: "bad_args" });
+    }
+    const secret = process.env.STRIPE_SECRET_KEY;
+    if (!secret) {
+      await safeReply(chatId, "❌ STRIPE_SECRET_KEY 未設定，產不了連結", true);
+      return res.status(200).json({ ok: true, movingLink: "no_secret" });
+    }
+    try {
+      const r = await createMovingLink(mv.value, secret, { expiresAt: mv.expiresAt });
+      const v = mv.value;
+      const head = [
+        `✅ 搬家連結已產生（¥${Number(v.amount).toLocaleString("ja-JP")}／${v.name}／搬家日 ${mdLabel(v.date)}）`,
+        r.mode === "session"
+          ? "⏰ 有付款期限，逾期連結自動失效"
+          : "♾ 無期限，付一次即失效",
+        Number(v.amount) >= 100000 ? "⚠️ 金額超過 10 萬円，確認一下沒打錯" : null,
+        "",
+        "👇 下面整段複製、貼到客人 LINE：",
+      ].filter((l) => l !== null).join("\n");
+      await safeReply(chatId, head, true);
+      await safeReply(chatId, buildMovingCustomerMessage(v, r.url, mv.expiresAt), true);
+      await safeReply(chatId, `（要作廢跟我說：${r.id}）`, true);
+      return res.status(200).json({ ok: true, movingLink: "created", id: r.id });
+    } catch (e) {
+      console.error("telegram-webhook moving link:", e);
+      await safeReply(chatId, `❌ 產連結失敗：${e.message}`, true);
+      return res.status(200).json({ ok: true, movingLink: "error", error: e.message });
     }
   }
 

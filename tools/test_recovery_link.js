@@ -87,6 +87,30 @@ t("buildRecoveryMeta：flag 與欄位齊", () => {
   assert.strictEqual(m.kumago_recovery, "1");
   assert.strictEqual(m.elevator, "yes");
   assert.strictEqual(m.line_user_id, ""); // 格式不對 → 丟棄
+  assert.strictEqual(m.customer_email, ""); // 沒給 email → 空字串
+});
+
+t("email 欄位：解析進 value、進 meta、壞格式擋下", () => {
+  const base = "/回收連結\n姓名：A\n金額：100\n回收日：7/23\n地址：X";
+  let r = parseRecoveryLinkCommand(base + "\nemail：taro@example.com", TODAY, NOW);
+  assert.ok(r.ok, JSON.stringify(r));
+  assert.strictEqual(r.value.email, "taro@example.com");
+  const m = buildRecoveryMeta(r.value);
+  assert.strictEqual(m.customer_email, "taro@example.com");
+  // 大寫標籤也吃（Email：）
+  r = parseRecoveryLinkCommand(base + "\nEmail：taro@example.com", TODAY, NOW);
+  assert.ok(r.ok && r.value.email === "taro@example.com");
+  // 沒給 → 空字串，照樣 ok
+  r = parseRecoveryLinkCommand(base, TODAY, NOW);
+  assert.ok(r.ok && r.value.email === "");
+  // 壞格式 → 明確錯誤
+  r = parseRecoveryLinkCommand(base + "\nemail：not-an-email", TODAY, NOW);
+  assert.ok(!r.ok && r.error.includes("email"), JSON.stringify(r));
+  // meta 端也擋壞格式（防呆雙保險）
+  assert.strictEqual(
+    buildRecoveryMeta({ name: "A", amount: 100, date: "2026-07-23", address: "X", email: "bad" }).customer_email,
+    ""
+  );
 });
 
 t("mdLabel 星期正確", () => {
