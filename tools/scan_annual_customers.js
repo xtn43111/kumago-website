@@ -57,7 +57,8 @@ function phoneFromDesc(text) {
   for (const line of (text || "").split("\n")) {
     const m = line.match(/^\s*(?:聯絡|電話|连络|TEL|Tel|Phone)[：: ]\s*(.+)$/i);
     if (!m) continue;
-    const val = m[1].trim();
+    // 去掉尾註（「電話：xxx（LINE 回覆登記）」「xxx（Stripe 結帳）」等）再驗數字
+    const val = m[1].trim().replace(/[（(][^）)]*[）)]\s*$/, "").trim();
     if (val.includes("@")) continue; // 聯絡欄放的是 email
     const digits = val.replace(/[\s\-()（）．.]/g, "");
     if (/^\+?\d{8,15}$/.test(digits)) return val;

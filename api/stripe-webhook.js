@@ -115,6 +115,10 @@ module.exports = async function handler(req, res) {
   }
 
   const meta = session.metadata || {};
+  // Stripe 結帳頁收的手機號（phone_number_collection）→ 行事曆事件電話行
+  if (session.customer_details && session.customer_details.phone) {
+    meta.checkout_phone = session.customer_details.phone;
+  }
   const lineItems = secret ? await fetchLineItems(session.id, secret) : [];
   const amountTotal = session.amount_total != null ? session.amount_total : null;
 
