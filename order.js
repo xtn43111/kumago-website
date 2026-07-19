@@ -183,6 +183,10 @@
     { key: "rice_cooker",   price: 7000, zh: "電飯鍋",       ja: "炊飯器", en: "Rice cooker" },
     { key: "pot",           price: 7000, zh: "鍋具組",       ja: "鍋セット", en: "Pot set" },
     { key: "clothesline",   price: 1800, zh: "曬衣桿",       ja: "物干し竿", en: "Drying pole" },
+    { key: "oven",          price: 4500, zh: "烤箱",         ja: "オーブントースター", en: "Toaster oven",
+      note: { zh: "圖片僅參考，以當下庫存為主",
+              ja: "写真はイメージです。在庫状況により実物と異なる場合があります",
+              en: "Image for reference only; actual item depends on stock" } },
   ].map((a) => ({ ...a, img: `assets/addons/${a.key}.jpg` }));
 
   /* =================== 配送費（依郵便番號辨識的市區自動計算） ===================
@@ -369,7 +373,8 @@
       el.innerHTML =
         `<span class="addon-photo"><img src="${a.img}" alt="${a[L()]}" loading="lazy" /><span class="addon-check" aria-hidden="true"></span></span>` +
         `<span class="addon-meta"><span class="addon-name">${a[L()]}</span>` +
-        `<span class="addon-price">${T.yen(a.price)}</span></span>`;
+        `<span class="addon-price">${T.yen(a.price)}</span></span>` +
+        (a.note ? `<span class="addon-note">${a.note[L()]}</span>` : "");
       el.addEventListener("click", () => {
         if (state.addons.has(a.key)) state.addons.delete(a.key);
         else state.addons.add(a.key);

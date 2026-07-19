@@ -32,6 +32,7 @@ const ADDONS = {
   rice_cooker:   { price: 7000, name: "電飯鍋 Rice cooker" },
   pot:           { price: 7000, name: "鍋具組 Pot set" },
   clothesline:   { price: 1800, name: "曬衣桿 Drying pole" },
+  oven:          { price: 4500, name: "烤箱 Toaster oven" },
 };
 
 /* Shipping fee, derived from the postal-code lookup (都道府県 + 市区町村).

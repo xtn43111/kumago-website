@@ -149,6 +149,7 @@
 .addon-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 9px 11px; }
 .addon-name { min-width: 0; font-size: .85rem; font-weight: 600; color: var(--charcoal); line-height: 1.3; }
 .addon-price { flex: 0 0 auto; font-size: .8rem; font-weight: 700; color: var(--green-deep); }
+.addon-note { display: block; padding: 0 11px 9px; font-size: .7rem; color: var(--ink-soft); line-height: 1.4; text-align: left; }
 
 /* ---------- postal + map ---------- */
 .postal-row { display: flex; gap: 10px; }
