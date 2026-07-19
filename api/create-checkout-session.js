@@ -208,8 +208,8 @@ module.exports = async function handler(req, res) {
   params.append("success_url", `${origin}/success?session_id={CHECKOUT_SESSION_ID}`);
   params.append("cancel_url", `${origin}/order?canceled=1`);
   params.append("locale", lang === "ja" ? "ja" : "zh-TW");
-  // 結帳頁強制收手機號——配送/回收聯絡用（2026-07 造冊發現大量客人無電話可聯）
-  params.append("phone_number_collection[enabled]", "true");
+  // 不開 phone_number_collection：Stripe 只有「強制填」模式，會擋住剛來日本
+  // 還沒辦手機號的客人。電話改事後用 LINE 補要（tools/request_phone_via_line.js）。
   if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contact)) {
     params.append("customer_email", contact);
   }
