@@ -21,6 +21,7 @@ const { buildOrderPush, sendTelegram } = require("../lib/telegram.js");
 const { handleRenewal } = require("../lib/renewal.js");
 const { handleRecoveryPayment } = require("../lib/recovery_payment.js");
 const { handleMovingPayment } = require("../lib/moving_payment.js");
+const { handleBuyoutPayment } = require("../lib/buyout_payment.js");
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -169,6 +170,16 @@ module.exports = async function handler(req, res) {
     const moving = await handleMovingPayment(session, meta, amountTotal);
     console.log("stripe-webhook: moving", JSON.stringify({ id: session.id, ...moving }));
     return res.status(200).json({ received: true, moving });
+  }
+
+  // 家電傢俱買斷（tools/create_buyout_link.js 產生，metadata 帶 kumago_buyout=1）
+  // 走獨立流程：建【買斷（費用已付）】全天記帳事件＋LINE 付款確認＋確認信＋
+  // Telegram，不建配送事件、不寄訂單信、不列到期/回收。kumago_notified 去重照常
+  // 生效（同 sha1(session id)）。
+  if (meta.kumago_buyout === "1") {
+    const buyout = await handleBuyoutPayment(session, meta, amountTotal);
+    console.log("stripe-webhook: buyout", JSON.stringify({ id: session.id, ...buyout }));
+    return res.status(200).json({ received: true, buyout });
   }
 
   // Record the order onto the shop Google Calendar first (idempotent on session
