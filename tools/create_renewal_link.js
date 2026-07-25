@@ -60,6 +60,7 @@ function parseArgs(argv) {
     const key = a.slice(2);
     if (key === "dry-run") { args.dryRun = true; continue; }
     if (key === "payment-link") { args.paymentLink = true; continue; }
+    if (key === "no-line") { args.noLine = true; continue; }
     args[key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = argv[++i];
   }
   return args;
@@ -103,6 +104,19 @@ function durationLabel(months) {
   const email = (a.email || "").trim();
   const isEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
   if (email && !isEmail) fail(`--email ${email} 格式不對`);
+
+  // 四件標準：付款要能 LINE 通知客人 → 產連結前強制確認 LINE userId（[[payment-notification-standard]]）。
+  {
+    const uid = String(a.lineUserId || "");
+    const validUid = /^U[0-9a-f]{32}$/.test(uid);
+    if (!validUid && !a.noLine) {
+      fail(
+        "四件標準：付款要 LINE 通知客人，需帶 --line-user-id U...（KUMAGO中古家電 頻道的 userId）。\n" +
+        (uid ? `   你給的「${uid}」不是合法格式（U + 32 hex）。\n` : "") +
+        "   查無客人 LINE ID 時：先去反查；真的沒有才明確加 --no-line 略過（會記錄為無 LINE 通知）。"
+      );
+    }
+  }
 
   const meta = {
     kumago_renewal: "1",
