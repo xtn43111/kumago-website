@@ -120,6 +120,7 @@ function fail(msg) {
     lineName: a.lineName || "",
     note: a.note || "",
     lang: a.lang || "zh",
+    itemName: a.itemName || "",
   };
   const meta = buildRecoveryMeta(v);
 
