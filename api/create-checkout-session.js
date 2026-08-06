@@ -27,7 +27,7 @@ const ADDONS = {
   vacuum:        { price: 4500, name: "吸塵器 Vacuum" },
   fan:           { price: 4500, name: "電風扇 Fan" },
   clothes_rack:  { price: 4500, name: "室內掛衣架 Clothes rack" },
-  desk:          { price: 9000, name: "桌椅組 Desk & chair" },
+  desk:          { price: 9000, name: "桌椅組 Desk & chair (desk W100×D60×H70cm)" },
   low_table:     { price: 6000, name: "和式桌 Low table (75×50×31.5cm)" },
   rice_cooker:   { price: 7000, name: "電飯鍋 Rice cooker" },
   pot:           { price: 7000, name: "鍋具組 Pot set" },
