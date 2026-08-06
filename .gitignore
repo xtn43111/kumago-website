@@ -22,3 +22,7 @@ token.json
 
 # local deliverables with customer PII — keep off GitHub
 *.csv
+
+# 年度決算工作資料夾：帳務、客人姓名/地址/電話、税理士往來文件。
+# 全資料夾不進版控（本 repo 會 push 到公開 GitHub）。
+決算/
